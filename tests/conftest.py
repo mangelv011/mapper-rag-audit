@@ -32,6 +32,27 @@ class FakeEmbedder:
         return self._embed(texts, 100)
 
 
+class FakeTokenizer:
+    """One word is one token; two special tokens per text, like [CLS] and [SEP]."""
+
+    def __init__(self, max_tokens=50):
+        self.max_tokens = max_tokens
+
+    def count(self, text):
+        return len(text.split()) + 2
+
+    def split(self, text, max_body_tokens):
+        words = text.split()
+        pieces = -(-len(words) // max_body_tokens)
+        size = -(-len(words) // pieces)
+        return [" ".join(words[i : i + size]) for i in range(0, len(words), size)]
+
+
+@pytest.fixture
+def fake_tokenizer():
+    return FakeTokenizer()
+
+
 @pytest.fixture
 def fake_embedder():
     return FakeEmbedder()
