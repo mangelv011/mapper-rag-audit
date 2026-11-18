@@ -1,0 +1,7 @@
+# Direct dependencies, pinned. Transitive ones are resolved by pip.
+numpy==2.4.6
+torch==2.15.0
+sentence-transformers==6.3.0
+pytest==9.2.0
+ruff==0.17.5
+-e .
