@@ -51,7 +51,7 @@ class FakeHfTokenizer:
         ids = self.encode(text, add_special_tokens=add_special_tokens)
         return {"input_ids": ids}
 
-    def encode(self, text, add_special_tokens=True):
+    def encode(self, text, add_special_tokens=True, verbose=True):
         ids = list(range(len(text.split())))
         return [-1, *ids, -2] if add_special_tokens else ids
 

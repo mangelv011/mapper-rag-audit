@@ -33,7 +33,7 @@ class ModelTokenizer:
         return len(encoded["input_ids"])
 
     def split(self, text: str, max_body_tokens: int) -> list[str]:
-        ids = self._tok.encode(text, add_special_tokens=False)
+        ids = self._tok.encode(text, add_special_tokens=False, verbose=False)
         pieces = -(-len(ids) // max_body_tokens)
         size = -(-len(ids) // pieces)
         return [self._tok.decode(ids[i : i + size]) for i in range(0, len(ids), size)]
