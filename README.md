@@ -41,18 +41,21 @@ The experiments use [SciFact](https://github.com/allenai/scifact) in the [BEIR](
 | Item | Count |
 |---|---|
 | Documents (abstracts) in the corpus | 5,183 |
-| Chunks | 5,183 |
+| Chunks | 5,658 |
+| Documents split into more than one chunk | 455 |
+| Largest chunk, in tokens (limit 512) | 512 |
 | Questions in `queries.jsonl` (train and test) | 1,109 |
 | Test questions (with test qrels) | 300 |
-| Question to correct chunk pairs (test qrels) | 339 |
+| Question to document pairs (test qrels) | 339 |
+| Question to correct chunk pairs | 397 |
 | Test questions without a correct chunk in the corpus | 0 |
 
-Counts were measured on the downloaded files. 277 test questions have one correct chunk, the other 23 have two to five.
+Counts were measured on the downloaded files. 232 test questions have one correct chunk, the other 68 have two to nine, because a relevant document can be split.
 
 - **Download**: `scifact.zip` from the BEIR mirror (2,816,079 bytes). The script checks its SHA-256 against a pinned value and refuses archive members that would leave `data/raw/`.
 - **Licence**: stated in SciFact's [LICENSE.md](https://github.com/allenai/scifact/blob/master/LICENSE.md). The abstracts in `corpus.jsonl` are ODC-By 1.0 (from S2ORC). The claims and evidence annotations are CC BY 4.0. BEIR redistributes the data and grants no licence of its own.
-- **Chunking rule**: one abstract is one chunk: the title, a line break and the abstract text. A document without a title uses the abstract alone. Chunk ids equal document ids, and the chunk to document map is stored anyway.
-- **Embedding model**: [`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5) through sentence-transformers, 384 dimensions, L2-normalised float32. Questions get the model's query instruction ("Represent this sentence for searching relevant passages: "), chunks do not. The script uses CUDA if available, then Apple MPS, then CPU, and prints the device and the embedding time. On a laptop CPU it took 494 s.
+- **Chunking rule**: a chunk is the title, a line break and a run of whole abstract sentences. Its token count, special tokens included, never exceeds the model's `max_seq_length` of 512, so no chunk is truncated. An abstract that fits stays one chunk. A longer one is cut into the smallest number of chunks that fit, with sentences packed so the chunks are roughly equal in size. A single sentence that is too long is cut on token boundaries. Sentences end at `.`, `!` or `?` followed by a space and a capital letter, except after `e.g.`, `i.e.`, `vs.` and `et al.`. Chunk ids are `<document id>#<n>` and the chunk to document map is stored in `chunks.json`. A question's correct chunks are all chunks of its relevant documents.
+- **Embedding model**: [`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5) through sentence-transformers, pinned to revision `5c38ec7c405ec4b44b94cc5a9bb96e735b38267a`, 384 dimensions, L2-normalised float32. Questions get the model's query instruction ("Represent this sentence for searching relevant passages: "), chunks do not. The script uses CUDA if available, then Apple MPS, then CPU, and prints the device and the embedding time. On a laptop CPU it took about 11 minutes (643 s, measured while other jobs shared the CPU).
 
 ### Run it
 
