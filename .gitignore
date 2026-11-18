@@ -17,3 +17,15 @@ data/
 Thumbs.db
 .vscode/
 .idea/
+
+# LaTeX build output
+report/*.aux
+report/*.bbl
+report/*.blg
+report/*.fdb_latexmk
+report/*.fls
+report/*.log
+report/*.out
+report/*.toc
+report/*.synctex.gz
+report/*.pdf
