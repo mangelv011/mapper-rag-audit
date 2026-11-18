@@ -32,6 +32,7 @@ Does Mapper detect regressions with fewer tests than traditional methods such as
 - [@santimartinez1717](https://github.com/santimartinez1717)
 - [@ndelval](https://github.com/ndelval)
 - [@gvidalquadras](https://github.com/gvidalquadras)
+- [@Victoriaguilllen](https://github.com/Victoriaguilllen)
 
 ## License
 
