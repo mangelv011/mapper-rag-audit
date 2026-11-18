@@ -10,18 +10,13 @@ from typing import Protocol
 
 import numpy as np
 
+from mapper_rag_audit.chunking import Chunk, Tokenizer, chunk_document
+
 
 class Embedder(Protocol):
     def embed_passages(self, texts: list[str]) -> np.ndarray: ...
 
     def embed_queries(self, texts: list[str]) -> np.ndarray: ...
-
-
-@dataclass(frozen=True)
-class Chunk:
-    chunk_id: str
-    doc_id: str
-    text: str
 
 
 @dataclass(frozen=True)
@@ -62,18 +57,21 @@ def read_beir(raw_dir: Path) -> RawBeir:
     )
 
 
-def build_corpus(raw: RawBeir, embedder: Embedder) -> Corpus:
+def build_corpus(raw: RawBeir, embedder: Embedder, tokenizer: Tokenizer) -> Corpus:
     chunks = [
-        Chunk(d["_id"], d["_id"], f"{d['title']}\n{d['text']}" if d["title"] else d["text"])
+        chunk
         for d in raw.documents
+        for chunk in chunk_document(d["_id"], d["title"], d["text"], tokenizer)
     ]
     embeddings = embedder.embed_passages([c.text for c in chunks])
 
-    present = {c.chunk_id for c in chunks}
+    chunks_of_doc: dict[str, list[str]] = {}
+    for c in chunks:
+        chunks_of_doc.setdefault(c.doc_id, []).append(c.chunk_id)
     qrels: dict[str, list[str]] = {}
-    for question_id, chunk_id, score in raw.qrels:
-        if score > 0 and chunk_id in present:
-            qrels.setdefault(question_id, []).append(chunk_id)
+    for question_id, doc_id, score in raw.qrels:
+        if score > 0 and doc_id in chunks_of_doc:
+            qrels.setdefault(question_id, []).extend(chunks_of_doc[doc_id])
     questions = [Question(q["_id"], q["text"]) for q in raw.queries if q["_id"] in qrels]
     question_embeddings = embedder.embed_queries([q.text for q in questions])
     return Corpus(chunks, embeddings, questions, question_embeddings, qrels)
