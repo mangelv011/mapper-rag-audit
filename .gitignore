@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# Local data (large datasets are linked, not committed)
+data/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
