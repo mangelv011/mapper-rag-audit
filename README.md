@@ -94,6 +94,14 @@ The pinned PyTorch publishes no wheel for Intel Macs, so macOS needs Apple silic
 
 Load everything with `mapper_rag_audit.data.load_corpus(Path("data"))`; it takes under a second. A question whose correct documents are all missing from the corpus is dropped, and a pair that points to a missing document is ignored. SciFact has neither case.
 
+## Graph diff selector
+
+`mapper_rag_audit.graph_diff` compares the Mapper graph before an ingestion with the graph after it (same Mapper parameters) and ranks the questions to re-run. `select_questions(graph_before, graph_after, new_chunk_ids, qrels, budget, rules)` returns question ids, at most `budget`. `diff_graphs` returns the matching, the affected and marked nodes and the new-chunk count per node. The module docstring states the matching and ranking rules. Each rule (`new_chunks`, `new_edge`, `split`, `merge`, `neighbours`) has a flag in `Rules`, all on by default.
+
+`MapperSelector(fit, build, rules, name)` adapts this to the shared selector interface (`name` and `select(before, after, questions, budget)`). `fit(before)` learns the Mapper parameters and `build(corpus, params)` makes a graph; the selector calls `build` on both corpora with the same parameters. A chunk is new if its id is missing from the corpus before or its text changed. The questions come from `questions` and their correct chunks from the qrels of the corpus before. An ingestion that removes chunks raises `ValueError`, because our ingestions only add chunks.
+
+The graph format (`MapperGraph`: node id to chunk ids, plus edges) is provisional until the Mapper builder exists, so `fit` and `build` are injected.
+
 ## License
 
 [MIT](LICENSE)
