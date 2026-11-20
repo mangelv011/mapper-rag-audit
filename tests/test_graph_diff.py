@@ -1,4 +1,15 @@
-from mapper_rag_audit.graph_diff import MapperGraph, Rules, diff_graphs, select_questions
+import numpy as np
+import pytest
+
+from mapper_rag_audit.chunking import Chunk
+from mapper_rag_audit.data import Corpus, Question
+from mapper_rag_audit.graph_diff import (
+    MapperGraph,
+    MapperSelector,
+    Rules,
+    diff_graphs,
+    select_questions,
+)
 
 NONE = Rules(new_chunks=False, new_edge=False, split=False, merge=False, neighbours=False)
 
@@ -250,9 +261,155 @@ def test_one_affected_holder_puts_the_question_in_the_affected_tier():
 #   after:   X{c1,c2,c3} - Y{c3,c4,c5} - Z{c5,c6}
 # All rules on: nothing may be affected, so nothing is selected.
 def test_unchanged_graph_with_overlapping_nodes_selects_nothing():
-    before = graph({"A": {"c1", "c2", "c3"}, "B": {"c3", "c4", "c5"}, "C": {"c5", "c6"}}, "A-B", "B-C")
-    after = graph({"X": {"c1", "c2", "c3"}, "Y": {"c3", "c4", "c5"}, "Z": {"c5", "c6"}}, "X-Y", "Y-Z")
+    before = graph(
+        {"A": {"c1", "c2", "c3"}, "B": {"c3", "c4", "c5"}, "C": {"c5", "c6"}}, "A-B", "B-C"
+    )
+    after = graph(
+        {"X": {"c1", "c2", "c3"}, "Y": {"c3", "c4", "c5"}, "Z": {"c5", "c6"}}, "X-Y", "Y-Z"
+    )
     diff = diff_graphs(before, after, set())
     assert diff.matching == {"X": "A", "Y": "B", "Z": "C"}
     assert diff.affected == set()
     assert select_questions(before, after, set(), {"q1": ["c1"], "q2": ["c4"]}, budget=5) == []
+
+
+# MapperSelector: fake fit/build, tiny corpora. Embeddings are zeros; the fakes ignore them.
+def corpus(texts: dict[str, str], qrels: dict[str, list[str]]) -> Corpus:
+    return Corpus(
+        chunks=[Chunk(chunk_id=c, doc_id=c.split("#")[0], text=t) for c, t in texts.items()],
+        embeddings=np.zeros((len(texts), 2), dtype=np.float32),
+        questions=[Question(q, q) for q in qrels],
+        question_embeddings=np.zeros((len(qrels), 2), dtype=np.float32),
+        qrels=qrels,
+    )
+
+
+class Fakes:
+    """fit and build that record their calls; build returns the graph registered for a corpus."""
+
+    def __init__(self, graphs: dict[int, MapperGraph]):
+        self.graphs = graphs
+        self.fit_calls: list[Corpus] = []
+        self.build_calls: list[tuple[Corpus, object]] = []
+
+    def fit(self, corpus: Corpus) -> object:
+        self.fit_calls.append(corpus)
+        return object()
+
+    def build(self, corpus: Corpus, params: object) -> MapperGraph:
+        self.build_calls.append((corpus, params))
+        return self.graphs[id(corpus)]
+
+
+# before:  A{a#0,a#1} - B{b#0}        after adds n#0 to A: q_a (correct chunk a#0) is selected
+def setup_one_added_chunk(**selector_args):
+    before = corpus({"a#0": "x", "a#1": "y", "b#0": "z"}, {"q_a": ["a#0"], "q_b": ["b#0"]})
+    after = corpus(
+        {"a#0": "x", "a#1": "y", "b#0": "z", "n#0": "new"}, {"q_a": ["a#0"], "q_b": ["b#0"]}
+    )
+    graph_before = graph({"A": {"a#0", "a#1"}, "B": {"b#0"}})
+    graph_after = graph({"A": {"a#0", "a#1", "n#0"}, "B": {"b#0"}})
+    fakes = Fakes({id(before): graph_before, id(after): graph_after})
+    selector = MapperSelector(fakes.fit, fakes.build, **selector_args)
+    return selector, fakes, before, after
+
+
+def test_an_added_chunk_selects_the_questions_of_its_node():
+    selector, _, before, after = setup_one_added_chunk(rules=only(new_chunks=True))
+    assert selector.select(before, after, ["q_a", "q_b"], 5) == ["q_a"]
+
+
+def test_name_defaults_to_mapper_and_can_be_set():
+    selector, *_ = setup_one_added_chunk()
+    assert selector.name == "mapper"
+    assert setup_one_added_chunk(name="m2")[0].name == "m2"
+
+
+def test_fit_runs_once_on_before_and_both_graphs_get_the_same_params():
+    selector, fakes, before, after = setup_one_added_chunk()
+    selector.select(before, after, ["q_a", "q_b"], 5)
+    assert fakes.fit_calls == [before]
+    assert [c for c, _ in fakes.build_calls] == [before, after]
+    params = {id(p) for _, p in fakes.build_calls}
+    assert len(params) == 1
+
+
+def test_a_chunk_with_changed_text_counts_as_new():
+    before = corpus({"a#0": "old", "b#0": "z"}, {"q_a": ["a#0"], "q_b": ["b#0"]})
+    after = corpus({"a#0": "edited", "b#0": "z"}, {"q_a": ["a#0"], "q_b": ["b#0"]})
+    graphs = {
+        id(before): graph({"A": {"a#0"}, "B": {"b#0"}}),
+        id(after): graph({"A": {"a#0"}, "B": {"b#0"}}),
+    }
+    fakes = Fakes(graphs)
+    selector = MapperSelector(fakes.fit, fakes.build, only(new_chunks=True))
+    assert selector.select(before, after, ["q_a", "q_b"], 5) == ["q_a"]
+
+
+def test_an_unchanged_chunk_is_not_new():
+    before = corpus({"a#0": "x"}, {"q_a": ["a#0"]})
+    same = corpus({"a#0": "x"}, {"q_a": ["a#0"]})
+    fakes = Fakes({id(before): graph({"A": {"a#0"}}), id(same): graph({"A": {"a#0"}})})
+    selector = MapperSelector(fakes.fit, fakes.build, only(new_chunks=True))
+    assert selector.select(before, same, ["q_a"], 5) == []
+
+
+def test_questions_outside_the_pool_are_never_returned():
+    selector, _, before, after = setup_one_added_chunk()
+    assert selector.select(before, after, ["q_b"], 5) == []
+
+
+def test_pool_ids_without_qrels_are_ignored():
+    selector, _, before, after = setup_one_added_chunk()
+    assert selector.select(before, after, ["q_a", "unknown"], 5) == ["q_a"]
+
+
+def test_budget_caps_the_selection():
+    before = corpus({"a#0": "x", "b#0": "z"}, {"q1": ["a#0"], "q2": ["b#0"]})
+    after = corpus({"a#0": "x", "b#0": "z", "n#0": "n", "n#1": "m"}, before.qrels)
+    graphs = {
+        id(before): graph({"A": {"a#0"}, "B": {"b#0"}}),
+        id(after): graph({"A": {"a#0", "n#0"}, "B": {"b#0", "n#1"}}),
+    }
+    fakes = Fakes(graphs)
+    selector = MapperSelector(fakes.fit, fakes.build)
+    assert selector.select(before, after, ["q1", "q2"], 1) == ["q1"]
+    assert selector.select(before, after, ["q1", "q2"], 2) == ["q1", "q2"]
+
+
+def test_removed_chunks_raise_and_say_how_many():
+    before = corpus({"a#0": "x", "a#1": "y", "b#0": "z"}, {"q": ["a#0"]})
+    after = corpus({"a#0": "x"}, {"q": ["a#0"]})
+    fakes = Fakes({})
+    selector = MapperSelector(fakes.fit, fakes.build)
+    with pytest.raises(ValueError, match="chunks removed by the ingestion: 2"):
+        selector.select(before, after, ["q"], 5)
+    assert fakes.fit_calls == []
+
+
+def test_rules_are_passed_to_the_diff():
+    # With neighbours on, q_b (in B, next to affected A) is selected as well.
+    before = corpus({"a#0": "x", "b#0": "z"}, {"q_a": ["a#0"], "q_b": ["b#0"]})
+    after = corpus({"a#0": "x", "b#0": "z", "n#0": "n"}, before.qrels)
+    graphs = {
+        id(before): graph({"A": {"a#0"}, "B": {"b#0"}}, "A-B"),
+        id(after): graph({"A": {"a#0", "n#0"}, "B": {"b#0"}}, "A-B"),
+    }
+    fakes = Fakes(graphs)
+    on = MapperSelector(fakes.fit, fakes.build, only(new_chunks=True, neighbours=True))
+    off = MapperSelector(fakes.fit, fakes.build, only(new_chunks=True, neighbours=False))
+    assert on.select(before, after, ["q_a", "q_b"], 5) == ["q_a", "q_b"]
+    assert off.select(before, after, ["q_a", "q_b"], 5) == ["q_a"]
+
+
+def test_qrels_come_from_the_corpus_before_the_ingestion():
+    before = corpus({"a#0": "x", "b#0": "z"}, {"q": ["a#0"]})
+    after = corpus({"a#0": "x", "b#0": "z", "n#0": "n"}, {"q": ["b#0"]})
+    fakes = Fakes(
+        {
+            id(before): graph({"A": {"a#0"}, "B": {"b#0"}}),
+            id(after): graph({"A": {"a#0", "n#0"}, "B": {"b#0"}}),
+        }
+    )
+    selector = MapperSelector(fakes.fit, fakes.build, only(new_chunks=True))
+    assert selector.select(before, after, ["q"], 5) == ["q"]

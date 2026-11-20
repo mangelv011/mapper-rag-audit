@@ -30,7 +30,13 @@ question id. The first `budget` ids are returned; a budget above the number of c
 all of them.
 """
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from typing import Generic, TypeVar
+
+from mapper_rag_audit.data import Corpus
+
+P = TypeVar("P")
 
 
 @dataclass(frozen=True)
@@ -137,3 +143,46 @@ def select_questions(
             most_new = max(diff.new_chunk_counts[v] for v in holders)
             keys[question_id] = (tier, -most_new, question_id)
     return sorted(keys, key=keys.__getitem__)[: max(budget, 0)]
+
+
+class MapperSelector(Generic[P]):
+    """Selector that compares the Mapper graphs of the corpus before and after an ingestion.
+
+    `fit` learns the Mapper parameters on the corpus before the ingestion; `build` makes a graph
+    from a corpus and those parameters. Both graphs use the same parameters. New chunks are the
+    ids of `after` that are not in `before`, or whose text changed. The questions to rank are
+    those in `questions` that have qrels in `before`.
+
+    An ingestion that removes chunks is not supported: it raises ValueError.
+    """
+
+    def __init__(
+        self,
+        fit: Callable[[Corpus], P],
+        build: Callable[[Corpus, P], MapperGraph],
+        rules: Rules = Rules(),
+        name: str = "mapper",
+    ):
+        self._fit = fit
+        self._build = build
+        self._rules = rules
+        self.name = name
+
+    def select(
+        self, before: Corpus, after: Corpus, questions: Sequence[str], budget: int
+    ) -> list[str]:
+        texts_before = {c.chunk_id: c.text for c in before.chunks}
+        texts_after = {c.chunk_id: c.text for c in after.chunks}
+        removed = texts_before.keys() - texts_after.keys()
+        if removed:
+            raise ValueError(
+                f"chunks removed by the ingestion: {len(removed)}; removals are not supported"
+            )
+        new_chunk_ids = {i for i, text in texts_after.items() if texts_before.get(i) != text}
+        params = self._fit(before)
+        graph_before = self._build(before, params)
+        graph_after = self._build(after, params)
+        qrels = {q: before.qrels[q] for q in questions if q in before.qrels}
+        return select_questions(
+            graph_before, graph_after, new_chunk_ids, qrels, budget, self._rules
+        )
