@@ -4,6 +4,8 @@ torch==2.15.0
 sentence-transformers==6.3.0
 transformers==5.23.0
 tokenizers==0.23.3
+matplotlib==3.11.2
+scikit-learn==1.9.1
 pytest==9.2.0
 ruff==0.17.5
 -e .
