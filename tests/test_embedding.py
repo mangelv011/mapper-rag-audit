@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 
 from mapper_rag_audit.embedding import (
@@ -47,16 +49,20 @@ def test_vectors_are_returned_as_float32():
 class FakeHfTokenizer:
     """Word-level tokenizer with the slice of the Hugging Face API the wrapper uses."""
 
-    def __call__(self, text, add_special_tokens=True, truncation=False, verbose=True):
-        ids = self.encode(text, add_special_tokens=add_special_tokens)
-        return {"input_ids": ids}
-
-    def encode(self, text, add_special_tokens=True, verbose=True):
-        ids = list(range(len(text.split())))
-        return [-1, *ids, -2] if add_special_tokens else ids
-
-    def decode(self, ids):
-        return " ".join(f"w{i}" for i in ids)
+    def __call__(
+        self,
+        text,
+        add_special_tokens=True,
+        truncation=False,
+        verbose=True,
+        return_offsets_mapping=False,
+    ):
+        words = [m.span() for m in re.finditer(r"\S+", text)]
+        ids = list(range(len(words)))
+        out = {"input_ids": [-1, *ids, -2] if add_special_tokens else ids}
+        if return_offsets_mapping:
+            out["offset_mapping"] = words
+        return out
 
 
 def test_model_tokenizer_counts_special_tokens_and_does_not_truncate():
@@ -66,11 +72,13 @@ def test_model_tokenizer_counts_special_tokens_and_does_not_truncate():
     assert tok.count(" ".join(["x"] * 1000)) == 1002
 
 
-def test_model_tokenizer_splits_into_balanced_pieces_within_the_limit():
+def test_model_tokenizer_splits_the_original_text_into_balanced_spans_within_the_limit():
     tok = ModelTokenizer(FakeHfTokenizer(), max_tokens=512)
-    pieces = tok.split(" ".join(["x"] * 25), 9)
+    text = "Naïve  T-cells\n(CD4+) " + " ".join(f"w{i}" for i in range(22))
+    pieces = [text[a:b] for a, b in tok.split(text, 9)]
     assert [len(p.split()) for p in pieces] == [9, 9, 7]
-    assert tok.split("a b c", 9) == ["w0 w1 w2"]
+    assert pieces[0] == "Naïve  T-cells\n(CD4+) w0 w1 w2 w3 w4 w5"
+    assert tok.split(" a b c ", 9) == [(1, 6)]
 
 
 def test_load_pins_the_model_revision_and_device(monkeypatch):

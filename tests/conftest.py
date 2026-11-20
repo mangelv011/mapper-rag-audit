@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -42,10 +43,13 @@ class FakeTokenizer:
         return len(text.split()) + 2
 
     def split(self, text, max_body_tokens):
-        words = text.split()
+        words = [m.span() for m in re.finditer(r"\S+", text)]
         pieces = -(-len(words) // max_body_tokens)
         size = -(-len(words) // pieces)
-        return [" ".join(words[i : i + size]) for i in range(0, len(words), size)]
+        return [
+            (words[i][0], words[min(i + size, len(words)) - 1][1])
+            for i in range(0, len(words), size)
+        ]
 
 
 @pytest.fixture
