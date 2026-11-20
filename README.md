@@ -94,6 +94,45 @@ The pinned PyTorch publishes no wheel for Intel Macs, so macOS needs Apple silic
 
 Load everything with `mapper_rag_audit.data.load_corpus(Path("data"))`; it takes under a second. A question whose correct documents are all missing from the corpus is dropped, and a pair that points to a missing document is ignored. SciFact has neither case.
 
+## Retrieval and failing questions
+
+Retrieval ranks every chunk by cosine similarity between its embedding and the question's embedding (`mapper_rag_audit.retrieval.top_k`). Ties go to the chunk that comes first in the corpus.
+
+A question **fails** when none of its correct chunks is in its top-k (`failing_questions`). A question is **broken by an ingestion** when it passes before the ingestion and fails after it (`broken_by_ingestion`). Questions that already fail on the original corpus are left out, because an ingestion cannot break them. Every selector is scored against these definitions.
+
+**k = 5.** Reasons:
+
+- A RAG system usually passes a handful of chunks to the language model, and 5 is a common default.
+- With k = 1, 39% of the questions already fail, which leaves few questions an ingestion can break.
+- With k = 10, a trap document has to push the correct chunk below ten others. Each trap then breaks fewer questions, and the experiment says less.
+- With k = 5, 234 of the 300 questions pass and can be broken. Most of them have a single correct chunk, so one well-placed trap chunk can still push it out.
+
+Questions that already fail on the original corpus (300 test questions):
+
+| k | Failing | Percent | Can be broken |
+|---|---|---|---|
+| 1 | 117 | 39.0% | 183 |
+| **5** | **66** | **22.0%** | **234** |
+| 10 | 47 | 15.7% | 253 |
+
+These figures were measured on the corpus built in #1. They will change slightly if the chunking changes. To recompute them for k = 1, 3, 5, 10 and 20, run:
+
+```bash
+python experiments/baseline_failures.py
+```
+
+## Selectors
+
+A selector chooses which questions to re-test after an ingestion. Mapper and every baseline implement `mapper_rag_audit.selection.Selector`:
+
+```python
+class Selector(Protocol):
+    name: str
+    def select(self, before: Corpus, after: Corpus, questions: Sequence[str], budget: int) -> list[str]: ...
+```
+
+`select` returns at most `budget` distinct question ids from `questions`, ranked by priority (most likely broken first), so any prefix is the selection for a smaller budget. A selector never runs the failure check itself. `run_selector` calls a selector and checks that its output keeps this contract.
+
 ## License
 
 [MIT](LICENSE)
