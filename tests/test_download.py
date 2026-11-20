@@ -69,3 +69,31 @@ def test_members_escaping_the_target_folder_are_refused(tmp_path, evil):
     assert not (tmp_path / "evil.txt").exists()
     assert not (tmp_path.parent / "evil.txt").exists()
     assert not (tmp_path / "raw" / "scifact" / "corpus.jsonl").exists()
+
+
+def test_failed_fetch_leaves_no_partial_file(tmp_path):
+    def failing_fetch(url: str, dest: Path) -> None:
+        dest.write_bytes(b"half")
+        raise TimeoutError("stalled")
+
+    with pytest.raises(TimeoutError):
+        ensure_dataset(tmp_path, "http://x/s.zip", "0" * 64, failing_fetch)
+    assert not (tmp_path / "raw" / "scifact.part").exists()
+    assert not (tmp_path / "raw" / "scifact.zip").exists()
+
+
+def test_default_fetch_streams_the_response_to_the_file_with_a_timeout(tmp_path, monkeypatch):
+    from mapper_rag_audit import download
+
+    seen = {}
+
+    def fake_urlopen(url, timeout=None):
+        seen.update(url=url, timeout=timeout)
+        return io.BytesIO(b"payload")
+
+    monkeypatch.setattr(download.urllib.request, "urlopen", fake_urlopen)
+    dest = tmp_path / "out.part"
+    download._fetch_url("http://x/s.zip", dest)
+    assert dest.read_bytes() == b"payload"
+    assert seen["url"] == "http://x/s.zip"
+    assert seen["timeout"] is not None and seen["timeout"] > 0

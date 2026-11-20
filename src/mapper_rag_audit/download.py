@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import shutil
 import urllib.request
 import zipfile
 from collections.abc import Callable
@@ -12,10 +13,12 @@ SCIFACT_URL = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/dataset
 SCIFACT_SHA256 = "536e14446a0ba56ed1398ab1055f39fe852686ecad24a6306c80c490fa8e0165"
 
 Fetch = Callable[[str, Path], None]
+TIMEOUT_SECONDS = 60
 
 
 def _fetch_url(url: str, dest: Path) -> None:
-    urllib.request.urlretrieve(url, dest)
+    with urllib.request.urlopen(url, timeout=TIMEOUT_SECONDS) as response, dest.open("wb") as f:
+        shutil.copyfileobj(response, f)
 
 
 def _sha256(path: Path) -> str:
@@ -47,10 +50,15 @@ def ensure_dataset(
     archive = raw / "scifact.zip"
     if not (archive.exists() and _sha256(archive) == sha256):
         partial = archive.with_suffix(".part")
-        fetch(url, partial)
-        if _sha256(partial) != sha256:
-            partial.unlink()
-            raise ValueError(f"SHA-256 of the download from {url} does not match the pinned value")
+        try:
+            fetch(url, partial)
+            if _sha256(partial) != sha256:
+                raise ValueError(
+                    f"SHA-256 of the download from {url} does not match the pinned value"
+                )
+        except BaseException:
+            partial.unlink(missing_ok=True)
+            raise
         partial.replace(archive)
     _extract(archive, raw)
     return raw / "scifact"
