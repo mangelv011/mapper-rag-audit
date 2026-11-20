@@ -32,11 +32,21 @@ class ModelTokenizer:
         encoded = self._tok(text, add_special_tokens=True, truncation=False, verbose=False)
         return len(encoded["input_ids"])
 
-    def split(self, text: str, max_body_tokens: int) -> list[str]:
-        ids = self._tok.encode(text, add_special_tokens=False, verbose=False)
-        pieces = -(-len(ids) // max_body_tokens)
-        size = -(-len(ids) // pieces)
-        return [self._tok.decode(ids[i : i + size]) for i in range(0, len(ids), size)]
+    def split(self, text: str, max_body_tokens: int) -> list[tuple[int, int]]:
+        encoded = self._tok(
+            text,
+            add_special_tokens=False,
+            return_offsets_mapping=True,
+            truncation=False,
+            verbose=False,
+        )
+        offsets = encoded["offset_mapping"]
+        pieces = -(-len(offsets) // max_body_tokens)
+        size = -(-len(offsets) // pieces)
+        return [
+            (offsets[i][0], offsets[min(i + size, len(offsets)) - 1][1])
+            for i in range(0, len(offsets), size)
+        ]
 
 
 class SentenceTransformerEmbedder:
