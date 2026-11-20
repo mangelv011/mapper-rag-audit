@@ -243,3 +243,16 @@ def test_one_affected_holder_puts_the_question_in_the_affected_tier():
         "q",
         "p",
     ]
+
+
+# No ingestion: the same overlapping graph before and after, renamed nodes.
+#   before:  A{c1,c2,c3} - B{c3,c4,c5} - C{c5,c6}
+#   after:   X{c1,c2,c3} - Y{c3,c4,c5} - Z{c5,c6}
+# All rules on: nothing may be affected, so nothing is selected.
+def test_unchanged_graph_with_overlapping_nodes_selects_nothing():
+    before = graph({"A": {"c1", "c2", "c3"}, "B": {"c3", "c4", "c5"}, "C": {"c5", "c6"}}, "A-B", "B-C")
+    after = graph({"X": {"c1", "c2", "c3"}, "Y": {"c3", "c4", "c5"}, "Z": {"c5", "c6"}}, "X-Y", "Y-Z")
+    diff = diff_graphs(before, after, set())
+    assert diff.matching == {"X": "A", "Y": "B", "Z": "C"}
+    assert diff.affected == set()
+    assert select_questions(before, after, set(), {"q1": ["c1"], "q2": ["c4"]}, budget=5) == []
