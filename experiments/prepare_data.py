@@ -12,6 +12,27 @@ from mapper_rag_audit.download import ensure_dataset
 from mapper_rag_audit.embedding import MODEL_NAME, SentenceTransformerEmbedder, detect_device
 
 
+class TimedEmbedder:
+    """Adds up the time spent inside the embedder, leaving chunking out."""
+
+    def __init__(self, embedder):
+        self._embedder = embedder
+        self.seconds = 0.0
+
+    def _timed(self, embed, texts):
+        start = time.perf_counter()
+        try:
+            return embed(texts)
+        finally:
+            self.seconds += time.perf_counter() - start
+
+    def embed_passages(self, texts):
+        return self._timed(self._embedder.embed_passages, texts)
+
+    def embed_queries(self, texts):
+        return self._timed(self._embedder.embed_queries, texts)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
@@ -23,9 +44,8 @@ def main() -> None:
     device = detect_device()
     embedder = SentenceTransformerEmbedder.load(device)
     tokenizer = embedder.tokenizer()
-    start = time.perf_counter()
-    corpus = build_corpus(raw, embedder, tokenizer)
-    elapsed = time.perf_counter() - start
+    timed = TimedEmbedder(embedder)
+    corpus = build_corpus(raw, timed, tokenizer)
     save_corpus(corpus, args.data_dir)
 
     asked = {q for q, _, _ in raw.qrels}
@@ -40,7 +60,7 @@ def main() -> None:
     print(f"test questions={len(asked)} kept={len(corpus.questions)}")
     pairs = sum(len(v) for v in corpus.qrels.values())
     print(f"correct chunks={pairs} from {len(raw.qrels)} question-document pairs")
-    print(f"model={MODEL_NAME} device={device} embedding_seconds={elapsed:.1f}")
+    print(f"model={MODEL_NAME} device={device} embedding_seconds={timed.seconds:.1f}")
     print(f"saved to {args.data_dir}")
 
 
