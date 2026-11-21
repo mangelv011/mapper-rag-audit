@@ -121,6 +121,44 @@ These figures were measured on the corpus built in #1. They will change slightly
 python experiments/baseline_failures.py
 ```
 
+## SciFact trap ingestions
+
+Each ingestion starts from the original SciFact corpus and adds 20 synthetic chunks.
+All three runs target the same 20 questions that originally passed at k = 5.
+`near_copy` alters details in a relevant chunk, `contradiction` applies rules intended
+to reverse or negate a finding, and `mix` combines text from a relevant chunk and a
+chunk from a different document with low cosine similarity to it.
+
+Run these commands after `prepare_data.py`:
+
+```bash
+python experiments/make_ingestions.py --type near_copy --n 20 --seed 42 --k 5
+python experiments/make_ingestions.py --type contradiction --n 20 --seed 42 --k 5
+python experiments/make_ingestions.py --type mix --n 20 --seed 42 --k 5
+```
+
+Each run saves the synthetic chunks, their embeddings, the regression question IDs,
+and the run manifest under `data/ingestions/<type>_n20_s42/`.
+
+At k = 5, 66 of 300 questions failed before ingestion and 234 passed. We rechecked
+all 300 questions after each ingestion.
+
+| Trap type | Newly failing among the 20 targets | Newly failing among the 234 initial passes | Total failing after ingestion |
+|---|---:|---:|---:|
+| `near_copy` | 2/20 (10%) | 2/234 (0.85%) | 68/300 (22.67%) |
+| `contradiction` | 1/20 (5%) | 1/234 (0.43%) | 67/300 (22.33%) |
+| `mix` | 1/20 (5%) | 1/234 (0.43%) | 67/300 (22.33%) |
+
+All regressions involved targeted questions. Question `1049` failed after all three
+ingestions, and `1041` failed only after `near_copy`. These results describe one seed
+and one batch size. They measure top-k retrieval coverage.
+The [trap examples](report/trap_examples.md) summarize five generated chunks per type.
+
+The runs reused the prepared SciFact corpus and embedded the new chunks with
+the pinned BGE model revision on an Intel Mac CPU. The local runtime used
+Python 3.11, PyTorch 2.2.2, sentence-transformers 3.0.1, transformers 4.44.2,
+tokenizers 0.19.1, and NumPy 1.26.2.
+
 ## Selectors
 
 A selector chooses which questions to re-test after an ingestion. Mapper and every baseline implement `mapper_rag_audit.selection.Selector`:
