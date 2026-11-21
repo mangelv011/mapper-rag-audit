@@ -6,3 +6,8 @@
 - **correct chunk**: a chunk that the dataset marks as relevant to a question (score above 0).
 - **ingestion**: adding or changing documents in the corpus.
 - **embedding**: the L2-normalised float32 vector a model assigns to a chunk or question.
+- **top-k**: the k chunks whose embeddings have the highest cosine similarity to a question's embedding. The project uses k = 5 (see the README).
+- **failing question**: a question none of whose correct chunks is in its top-k. Defined once, in `mapper_rag_audit.retrieval.failing_questions`.
+- **broken question**: a question that passes before an ingestion and fails after it. Questions that already fail before are never counted as broken.
+- **selector**: a method that, given the corpus before and after an ingestion, ranks the questions to re-test (Mapper or a baseline). Interface: `mapper_rag_audit.selection.Selector`.
+- **budget**: the maximum number of questions a selector may pick for re-testing.
