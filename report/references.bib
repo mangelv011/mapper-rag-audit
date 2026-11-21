@@ -17,17 +17,6 @@
   doi       = {10.2312/SPBG/SPBG07/091-100}
 }
 
-@article{carlsson2009topology,
-  title   = {Topology and Data},
-  author  = {Carlsson, Gunnar},
-  journal = {Bulletin of the American Mathematical Society},
-  volume  = {46},
-  number  = {2},
-  pages   = {255--308},
-  year    = {2009},
-  doi     = {10.1090/S0273-0979-09-01249-X}
-}
-
 @article{rathore2023topobert,
   title   = {{TopoBERT}: Exploring the Topology of Fine-Tuned Word Representations},
   author  = {Rathore, Archit and Zhou, Yichu and Srikumar, Vivek and Wang, Bei},
@@ -37,16 +26,6 @@
   pages   = {186--208},
   year    = {2023},
   doi     = {10.1177/14738716231168671}
-}
-
-@misc{uchendu2024tdanlp,
-  title         = {Topological Data Analysis Applications in Natural Language Processing: A Survey},
-  author        = {Uchendu, Adaku and Le, Thai},
-  year          = {2024},
-  eprint        = {2411.10298},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.CL},
-  note          = {Accepted to ACM SIGKDD Explorations, 2026}
 }
 
 % Mapper libraries (#4 picks one of the two)
@@ -93,33 +72,6 @@
   url       = {https://arxiv.org/abs/2004.04906}
 }
 
-@inproceedings{reimers2019sbert,
-  title     = {Sentence-{BERT}: Sentence Embeddings using {Siamese} {BERT}-Networks},
-  author    = {Reimers, Nils and Gurevych, Iryna},
-  booktitle = {Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)},
-  pages     = {3982--3992},
-  year      = {2019},
-  doi       = {10.18653/v1/D19-1410}
-}
-
-@inproceedings{shi2023distracted,
-  title     = {Large Language Models Can Be Easily Distracted by Irrelevant Context},
-  author    = {Shi, Freda and Chen, Xinyun and Misra, Kanishka and Scales, Nathan and Dohan, David and Chi, Ed and Sch{\"a}rli, Nathanael and Zhou, Denny},
-  booktitle = {Proceedings of the 40th International Conference on Machine Learning (ICML)},
-  pages     = {31210--31227},
-  year      = {2023},
-  url       = {https://arxiv.org/abs/2302.00093}
-}
-
-@inproceedings{cuconasu2024noise,
-  title     = {The Power of Noise: Redefining Retrieval for {RAG} Systems},
-  author    = {Cuconasu, Florin and Trappolini, Giovanni and Siciliano, Federico and Filice, Simone and Campagnano, Cesare and Maarek, Yoelle and Tonellotto, Nicola and Silvestri, Fabrizio},
-  booktitle = {Proceedings of the 47th International ACM SIGIR Conference on Research and Development in Information Retrieval},
-  pages     = {719--729},
-  year      = {2024},
-  doi       = {10.1145/3626772.3657834}
-}
-
 @inproceedings{zhong2023poisoning,
   title     = {Poisoning Retrieval Corpora by Injecting Adversarial Passages},
   author    = {Zhong, Zexuan and Huang, Ziqing and Wettig, Alexander and Chen, Danqi},
@@ -162,15 +114,6 @@
   doi     = {10.1002/stvr.430}
 }
 
-@inproceedings{feng2020deepgini,
-  title     = {{DeepGini}: Prioritizing Massive Tests to Enhance the Robustness of Deep Neural Networks},
-  author    = {Feng, Yang and Shi, Qingkai and Gao, Xinyu and Wan, Jun and Fang, Chunrong and Chen, Zhenyu},
-  booktitle = {Proceedings of the 29th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA)},
-  pages     = {177--188},
-  year      = {2020},
-  doi       = {10.1145/3395363.3397357}
-}
-
 % ---------------------------------------------------------------------------
 % Data and models used in the experiments
 % ---------------------------------------------------------------------------
@@ -182,24 +125,9 @@
   pages     = {7534--7550},
   year      = {2020},
   doi       = {10.18653/v1/2020.emnlp-main.609},
-  url       = {https://github.com/allenai/scifact}
-}
-
-@misc{scifact2020licence,
-  title        = {{SciFact} Licence},
-  author       = {{Allen Institute for AI}},
-  year         = {2020},
-  howpublished = {\url{https://github.com/allenai/scifact/blob/master/LICENSE.md}},
-  note         = {Claims and evidence annotations: CC BY 4.0. Abstracts (from S2ORC): ODC-By 1.0. Code: Apache 2.0}
-}
-
-@inproceedings{lo2020s2orc,
-  title     = {{S2ORC}: The {Semantic Scholar} Open Research Corpus},
-  author    = {Lo, Kyle and Wang, Lucy Lu and Neumann, Mark and Kinney, Rodney and Weld, Daniel},
-  booktitle = {Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics (ACL)},
-  pages     = {4969--4983},
-  year      = {2020},
-  doi       = {10.18653/v1/2020.acl-main.447}
+  url       = {https://github.com/allenai/scifact},
+  note      = {Licence: claims CC BY 4.0; abstracts ODC-By 1.0, taken from S2ORC
+               (Lo et al., ACL 2020, doi:10.18653/v1/2020.acl-main.447)}
 }
 
 @inproceedings{thakur2021beir,
@@ -216,13 +144,9 @@
   booktitle = {Proceedings of the 47th International ACM SIGIR Conference on Research and Development in Information Retrieval},
   pages     = {641--649},
   year      = {2024},
-  doi       = {10.1145/3626772.3657878}
+  doi       = {10.1145/3626772.3657878},
+  url       = {https://huggingface.co/BAAI/bge-small-en-v1.5},
+  note      = {Model used: BAAI/bge-small-en-v1.5, revision
+               5c38ec7c405ec4b44b94cc5a9bb96e735b38267a, MIT licence}
 }
 
-@misc{bge2023small,
-  title        = {{BAAI/bge-small-en-v1.5}},
-  author       = {{Beijing Academy of Artificial Intelligence}},
-  year         = {2023},
-  howpublished = {\url{https://huggingface.co/BAAI/bge-small-en-v1.5}},
-  note         = {Revision 5c38ec7c405ec4b44b94cc5a9bb96e735b38267a. MIT licence}
-}

@@ -1,56 +1,31 @@
 \section{Introduction}
 \label{sec:introduction}
 
-A retrieval-augmented generation (RAG) system answers a question in two
-steps~\cite{lewis2020rag}. A retriever first picks the few passages of a
-document collection that look most similar to the question. A language
-model then writes the answer from those passages. If the retriever misses
-the passage that holds the answer, the language model cannot recover it.
-So the quality of a RAG system depends heavily on its retrieval.
+A retrieval-augmented generation (RAG) system retrieves the passages most
+similar to a question and lets a language model answer from
+them~\cite{lewis2020rag}. If the correct passage is not retrieved, the
+answer cannot use it.
 
-The document collection of a RAG system keeps changing. New documents are
-\emph{ingested}, old ones are edited. An ingestion can break retrieval for
-questions that used to work. A new passage that looks similar to a
-question, but does not answer it, can push the correct passage out of the
-few passages the retriever returns. Studies of RAG robustness show that
-such passages are both easy to produce and harmful: a handful of injected
-passages is retrieved for many unseen questions~\cite{zhong2023poisoning,
-zou2025poisonedrag}, and related but non-relevant passages hurt the
-answer more than random ones do~\cite{cuconasu2024noise}.
+The corpus of a RAG system changes with every \emph{ingestion} of new
+documents, and an ingestion can break questions that used to work: a new
+passage that looks relevant but is not can push the correct one out of the
+retrieved set. A few injected passages are enough to be retrieved for many
+questions~\cite{zhong2023poisoning, zou2025poisonedrag}. Re-running the
+whole test set after each ingestion is costly. Software engineering faces
+the same problem and solves it with regression test selection: re-run only
+the tests the change can affect~\cite{rothermel1997safe, yoo2012regression}.
 
-The usual protection is a test set of questions with known correct
-passages, run again after each ingestion. Re-running every question is
-costly. Each one needs a retrieval and often a language-model call and a
-check of the answer, and the test set grows with the system. Software
-engineering faces the same trade-off and answers it with regression test
-selection: re-run only the tests that the change can
-affect~\cite{rothermel1997safe, yoo2012regression}.
-
-An ingestion has a useful property: its damage is \emph{local}. A new
-passage can only displace the correct passage of a question whose
-embedding lies close to it (Section~\ref{sec:background}). If we had a map
-of the corpus that shows which regions an ingestion changed, we could
-re-test only the questions in those regions. Mapper~\cite{singh2007topological}
-builds such a map. It summarises a high-dimensional point cloud as a graph
-whose nodes are overlapping clusters of points, and it keeps the
-connections between regions that ordinary clustering loses.
-
-This report studies the following question:
+The damage of an ingestion is local: it only affects questions whose
+embeddings lie near the new passages (Section~\ref{sec:background}).
+Mapper~\cite{singh2007topological} summarises a point cloud as a graph of
+overlapping clusters, so comparing the graphs before and after an
+ingestion shows which regions changed. Our research question is:
 \begin{quote}
-\emph{Does Mapper find the test questions broken by an ingestion with fewer
-re-tests than simpler selection methods, such as random sampling or
-clustering?}
+\emph{Does Mapper find the questions broken by an ingestion with fewer
+re-tests than random sampling or clustering?}
 \end{quote}
 
-We build the Mapper graph of a RAG corpus before and after an ingestion,
-select the questions that fall in the regions that changed, and compare
-how many broken questions each method finds for a fixed budget of
-re-tests. The experiments use the SciFact corpus of scientific
-abstracts~\cite{wadden2020scifact}, in the format distributed by
-BEIR~\cite{thakur2021beir}, and the \texttt{bge-small-en-v1.5} embedding
-model~\cite{xiao2024cpack, bge2023small}. The SciFact abstracts come from
-S2ORC~\cite{lo2020s2orc} under ODC-By~1.0 and its claims are under
-CC~BY~4.0~\cite{scifact2020licence}; the model is under the MIT licence.
-
-Section~\ref{sec:background} reviews how RAG retrieval works and why it
-degrades. Section~\ref{sec:related} covers related work.
+We use SciFact~\cite{wadden2020scifact} in the BEIR
+format~\cite{thakur2021beir} and the \texttt{bge-small-en-v1.5} embedding
+model~\cite{xiao2024cpack}; their sources and licences are given in the
+references.
