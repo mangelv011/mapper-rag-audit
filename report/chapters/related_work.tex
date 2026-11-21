@@ -1,0 +1,47 @@
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Mapper and TDA on text embeddings.}
+Mapper was introduced by Singh, M\'emoli and Carlsson as a way to describe a
+high-dimensional data set by a simplicial complex built from a lens
+function, a cover of its range and a clustering of each preimage, with no
+dependence on a particular clustering algorithm~\cite{singh2007topological}.
+Carlsson~\cite{carlsson2009topology} surveys the wider programme of
+topological data analysis (TDA), which studies the shape of data through
+qualitative, coordinate-free summaries. Mapper has been applied to text
+embeddings. TopoBERT~\cite{rathore2023topobert} uses the Mapper graph to
+approximate the shape of the embedding space of fine-tuned BERT-type
+models and to explore how fine-tuning changes it across layers and tasks.
+Uchendu and Le~\cite{uchendu2024tdanlp} survey 137 papers that apply TDA
+to natural language processing, including several that apply Mapper to
+text and its embeddings. Two maintained Python libraries implement Mapper:
+KeplerMapper~\cite{vanveen2019kepler} and
+tda-mapper~\cite{simi2025tdamapper}.
+
+\paragraph{Mapper applied to RAG corpora.}
+% TODO(#11): the issue mentions an ICML 2026 paper on Mapper for RAG
+% corpora. It was not found in searches of the ICML 2026 programme and
+% arXiv, so it is not cited. Add it here only after opening the paper.
+The work above uses Mapper to describe an embedding space at one moment.
+We use it to compare two moments: the corpus before and after an
+ingestion. We did not find prior work that uses Mapper to decide which
+test questions of a RAG system to re-run.
+
+\paragraph{Test selection for regression testing.}
+Regression testing re-runs tests after a change to check that the
+change did not harm existing behaviour. Since re-running the whole test
+suite becomes too costly as software grows, three families of techniques
+reduce the work~\cite{yoo2012regression}: \emph{minimisation} removes
+redundant tests, \emph{selection} re-runs only the tests affected by the
+change, and \emph{prioritisation} orders the tests so that faults are
+found early. A selection technique is \emph{safe} if it keeps every test
+that could reveal a fault caused by the change; Rothermel and
+Harrold~\cite{rothermel1997safe} give a safe technique based on the
+control-flow graphs of the old and new program. For machine-learning
+models, DeepGini~\cite{feng2020deepgini} prioritises test inputs by the
+impurity of the model's output, so that likely misclassifications are
+labelled first. Our setting is a selection problem, but the change is to
+the data, not the code, and there is no control-flow graph to compare.
+The Mapper graphs of the corpus before and after the ingestion play that
+role. Our selectors also rank the questions they pick, so each of them gives a
+prioritisation as well.

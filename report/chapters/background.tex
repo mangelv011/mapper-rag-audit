@@ -1,1 +1,71 @@
-\section{Background}
+\section{Background: RAG retrieval and how it degrades}
+\label{sec:background}
+
+\paragraph{Chunking.}
+Documents are usually too long to embed or to pass to a language model
+whole, so they are cut into \emph{chunks}. In this project a chunk is the
+title of an abstract followed by a run of its whole sentences, and it never
+exceeds the 512-token limit of the embedding model. A short abstract stays
+one chunk; a longer one becomes several. The \emph{corpus} is the set of
+all chunks.
+
+\paragraph{Embeddings.}
+An embedding model maps a text to a vector so that texts with similar
+meaning get nearby vectors. Dense retrievers encode questions and passages
+into the same vector space and rank passages by inner
+product~\cite{karpukhin2020dpr}; Sentence-BERT showed how to train such
+encoders so that cosine similarity is meaningful~\cite{reimers2019sbert}.
+We use \texttt{bge-small-en-v1.5}~\cite{xiao2024cpack, bge2023small}, which
+outputs 384-dimensional vectors. We normalise every vector to unit length,
+so the cosine similarity of a question $q$ and a chunk $c$ is the inner
+product $s(q,c) = \langle e(q), e(c) \rangle$.
+
+\paragraph{Top-$k$ retrieval.}
+Given a question $q$ and a corpus $C$, the retriever returns the $k$
+chunks with the highest similarity:
+\[
+  \mathrm{top}_k(q, C) = \text{the $k$ chunks } c \in C \text{ with largest } s(q,c).
+\]
+A question $q$ with correct chunks $R(q)$ \emph{fails} when
+$R(q) \cap \mathrm{top}_k(q, C) = \emptyset$. We use $k = 5$, a common
+number of passages to give a language model.
+
+\paragraph{How an ingestion breaks a question.}
+An ingestion adds a set of chunks $N$, giving the new corpus $C' = C \cup N$.
+Let $\tau_k(q)$ be the similarity of the $k$-th chunk in
+$\mathrm{top}_k(q, C)$. A new chunk $n$ enters the top-$k$ of $q$ only if
+$s(q,n) > \tau_k(q)$. Let $m(q) = \max_{r \in R(q)} s(q,r)$ be the score of
+the best correct chunk. A question that passed before fails after the
+ingestion exactly when enough new chunks beat all of its correct chunks:
+\[
+  \bigl|\{\, n \in N : s(q,n) > m(q) \,\}\bigr|
+  \;\ge\; k - \bigl|\{\, c \in C \setminus R(q) : s(q,c) > m(q) \,\}\bigr| .
+\]
+(Ties go to the chunk that comes first in the corpus, and new chunks come
+last.)
+In words: the correct chunks are not deleted, they are \emph{displaced}.
+Displacement needs new chunks that are closer to the question than its
+correct chunk. Since all vectors are on the unit sphere, being closer in
+cosine similarity means being closer in Euclidean distance, as
+$\|e(q)-e(n)\|^2 = 2 - 2\,s(q,n)$. So an ingestion can only break
+questions that lie near the new chunks in the embedding space. This
+locality is what a map of the corpus can exploit.
+
+\paragraph{Distractors.}
+The chunks that cause displacement are \emph{distractors}: they look
+relevant to the retriever but do not hold the answer. They matter twice.
+First, they push correct chunks out of the top-$k$. Zhong et
+al.~\cite{zhong2023poisoning} show that a small number of passages,
+optimised on training questions and inserted into a large corpus, are
+retrieved for many questions the attacker never saw, and
+PoisonedRAG~\cite{zou2025poisonedrag} reports that five injected texts per
+target question are enough to control the answer in a database of
+millions of texts. Second, even when the correct chunk is still retrieved,
+distractors in the context degrade the answer. Language models are easily
+distracted by irrelevant context~\cite{shi2023distracted}, and in RAG the
+top-scoring retrieved passages that do not contain the answer hurt
+accuracy more than random passages do~\cite{cuconasu2024noise}. Distractors
+do not have to be adversarial: an ingestion of honest documents on a
+nearby topic can have the same effect. This report deals only with the
+first effect, the displacement of correct chunks, because it can be
+measured without a language model.
