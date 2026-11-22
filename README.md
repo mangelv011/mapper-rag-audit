@@ -133,6 +133,22 @@ class Selector(Protocol):
 
 `select` returns at most `budget` distinct question ids from `questions`, ranked by priority (most likely broken first), so any prefix is the selection for a smaller budget. A selector never runs the failure check itself. `run_selector` calls a selector and checks that its output keeps this contract.
 
+### Baselines
+
+Mapper is compared with three simpler selectors in `mapper_rag_audit.baselines`. They follow the same conventions as the Mapper selector:
+- The candidates are the questions with correct chunks.
+- A new chunk is a chunk id that is added or whose text changes.
+- An ingestion that removes chunks is rejected.
+- Ties are broken by question id.
+
+| Selector | Rule | Parameters |
+|---|---|---|
+| `RandomSelector` | A seeded uniform shuffle of the candidates. It ignores the ingestion and is the floor every method must beat. | `seed` |
+| `KMeansSelector` | Fits k-means on the chunks before the ingestion and assigns the chunks after it to the nearest centroid. It marks the clusters that receive a new chunk and ranks questions by the number of new chunks in their correct chunk's cluster. It does not use neighbours or edges. | `n_clusters` = the number of nodes in the Mapper graph of the corpus before the ingestion, so both split the corpus into the same number of regions. `seed`, `n_init` = 10. |
+| `NearestNeighboursSelector` | Takes the `m` nearest old chunks of each new chunk (cosine) and ranks questions whose correct chunk is among them, closest first. | `m` = 10, twice the retrieval k, as a margin. Because the ranking is by similarity, a larger `m` only adds candidates at the end. |
+
+Only Random always fills the budget. The other two return only the questions their rule marks, as Mapper does. A shorter list means the method found nothing else worth re-testing.
+
 ## License
 
 [MIT](LICENSE)
