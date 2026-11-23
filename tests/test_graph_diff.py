@@ -63,6 +63,18 @@ def test_matching_tie_goes_to_the_smaller_node_id():
     assert diff_graphs(before, after, set(), NONE).matching == {"X": "P"}
 
 
+# A cluster inside the overlap of two intervals is a node in both of them, with the same
+# chunks: before and after hold the pair i00r0 and i01r0. Both after-nodes have identical old
+# chunks, so Jaccard ties, and without the id tie rule both would match i00r0 and the duplicate
+# would be counted as a split.
+def test_duplicate_nodes_of_overlapping_intervals_are_not_counted_as_a_split():
+    before = graph({"i00r0": {"c1", "c2"}, "i01r0": {"c1", "c2"}})
+    after = graph({"i00r0": {"c1", "c2", "n1"}, "i01r0": {"c1", "c2", "n1"}})
+    diff = diff_graphs(before, after, {"n1"}, only(new_chunks=True, split=True, merge=True))
+    assert diff.matching == {"i00r0": "i00r0", "i01r0": "i01r0"}
+    assert diff.affected == {"i00r0", "i01r0"}
+
+
 # Jaccard, not raw overlap: old {c1,c2}; P{c1,c2,c3,c4,c5} shares 2 of 5; Q{c1} shares 1 of 2
 def test_matching_uses_jaccard_not_overlap_size():
     before = graph({"P": {"c1", "c2", "c3", "c4", "c5"}, "Q": {"c1"}})

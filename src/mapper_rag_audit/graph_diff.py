@@ -7,9 +7,16 @@ Both graphs come from the same Mapper parameters: `graph_before` on the corpus b
 ingestion, `graph_after` on the corpus after it.
 
 Matching. For an after-node v, its old chunks are v minus the new chunks. v is matched to the
-before-node u that maximises Jaccard(old chunks of v, u). Ties go to the smaller node id. A node
-with no old chunks, or no overlap with any before-node, has no match. The reverse matching maps
-each before-node u to the after-node v maximising Jaccard(u, old chunks of v), same tie rule.
+before-node u that maximises Jaccard(old chunks of v, u). Ties go to u with the same node id as v,
+and then to the smaller node id. A node with no old chunks, or no overlap with any before-node,
+has no match. The reverse matching maps each before-node u to the after-node v maximising
+Jaccard(u, old chunks of v), same tie rule.
+
+The tie on the node id matters because the cover overlaps: a cluster that lies in the overlap of
+two intervals is a node in each of them, with the same chunks, so such nodes come in pairs. Jaccard
+cannot tell the pair apart, and without the tie rule both would match the first node of the pair
+and the duplicate would be counted as a split. With stable node ids (same id means same region) the
+pair matches itself and the split rules only see real splits.
 
 Rules that mark an after-node as affected; each has a flag in `Rules`, all on by default:
 - new_chunks: v contains at least one new chunk.
@@ -66,19 +73,27 @@ def _jaccard(a: frozenset[str], b: frozenset[str]) -> float:
     return len(a & b) / len(a | b)
 
 
-def _match(chunks: frozenset[str], candidates: dict[str, frozenset[str]]) -> str | None:
-    best, best_score = None, 0.0
+def _match(
+    source_id: str, chunks: frozenset[str], candidates: dict[str, frozenset[str]]
+) -> str | None:
+    """The candidate with the largest Jaccard to `chunks`; ties prefer the id of the source."""
+    best, best_key = None, (0.0, False)
     for node_id in sorted(candidates):
         score = _jaccard(chunks, candidates[node_id])
-        if score > best_score:
-            best, best_score = node_id, score
+        if score == 0:
+            continue
+        key = (score, node_id == source_id)
+        if key > best_key:
+            best, best_key = node_id, key
     return best
 
 
 def _match_all(
     sources: dict[str, frozenset[str]], targets: dict[str, frozenset[str]]
 ) -> dict[str, str]:
-    matched = {source: _match(chunks, targets) for source, chunks in sources.items()}
+    matched = {
+        source: _match(source, chunks, targets) for source, chunks in sources.items()
+    }
     return {source: target for source, target in matched.items() if target is not None}
 
 
