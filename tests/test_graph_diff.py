@@ -8,6 +8,7 @@ from mapper_rag_audit.graph_diff import (
     MapperSelector,
     Rules,
     diff_graphs,
+    new_chunk_closeness,
     select_questions,
 )
 
@@ -425,3 +426,40 @@ def test_qrels_come_from_the_corpus_before_the_ingestion():
     )
     selector = MapperSelector(fakes.fit, fakes.build, only(new_chunks=True))
     assert selector.select(before, after, ["q"], 5) == ["q"]
+
+
+# Ranking by closeness to the new chunks
+#   before:  A{a#0} - B{b#0}
+#   after:   A{a#0,n1} - B{b#0,n2}      both questions are in an affected node with one new
+#                                       chunk, so only the closeness can separate them
+def test_closeness_breaks_a_tie_that_the_question_ids_would_decide():
+    before = graph({"A": {"a#0"}, "B": {"b#0"}}, "A-B")
+    after = graph({"A": {"a#0", "n1"}, "B": {"b#0", "n2"}}, "A-B")
+    qrels = {"q_a": ["a#0"], "q_b": ["b#0"]}
+    args = (before, after, {"n1", "n2"}, qrels, 5, only(new_chunks=True))
+    assert select_questions(*args) == ["q_a", "q_b"]
+    assert select_questions(*args, {"a#0": 0.10, "b#0": 0.95}) == ["q_b", "q_a"]
+
+
+def test_a_chunk_missing_from_closeness_loses_any_tie():
+    before = graph({"A": {"a#0"}, "B": {"b#0"}}, "A-B")
+    after = graph({"A": {"a#0", "n1"}, "B": {"b#0", "n2"}}, "A-B")
+    qrels = {"q_a": ["a#0"], "q_b": ["b#0"]}
+    selected = select_questions(
+        before, after, {"n1", "n2"}, qrels, 5, only(new_chunks=True), {"b#0": -0.5}
+    )
+    assert selected == ["q_b", "q_a"]
+
+
+def test_closeness_is_the_cosine_to_the_nearest_new_chunk():
+    after = Corpus(
+        chunks=[Chunk("a#0", "a", "x"), Chunk("b#0", "b", "y"), Chunk("c#0", "c", "z")],
+        embeddings=np.array([[1.0, 0.0], [0.0, 1.0], [2.0, 0.0]], dtype=np.float32),
+        questions=[],
+        question_embeddings=np.zeros((0, 2), dtype=np.float32),
+        qrels={},
+    )
+    closeness = new_chunk_closeness(after, {"b#0"})
+    assert closeness["b#0"] == pytest.approx(1.0)
+    assert closeness["a#0"] == pytest.approx(0.0)
+    assert closeness["c#0"] == pytest.approx(0.0)

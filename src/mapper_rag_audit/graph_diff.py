@@ -32,14 +32,16 @@ affected nodes. With it off, marked = affected.
 
 Ranking. A question is a candidate if one of its correct chunks lies in a marked node. Sort key:
 affected tier first (0 if one of those chunks lies in an affected node, else 1), then the largest
-number of new chunks among the marked nodes holding one of its correct chunks (more first), then
-question id. The first `budget` ids are returned; a budget above the number of candidates returns
-all of them.
+number of new chunks among the marked nodes holding one of its correct chunks (more first), then the
+similarity between its correct chunks and the nearest new chunk (higher first), then question id.
+The first `budget` ids are returned; a budget above the number of candidates returns all of them.
 
-At a small budget the cut can fall inside a large group of questions tied on the first two keys:
-on the near-copy ingestion of #3 (20 chunks, seed 42) 116 of the 203 candidates tie at
-(affected, one new chunk), so their order is the order of the ids and the selection among them is
-arbitrary. Which key to add, and whether the baselines share it, is the decision of #7.
+Without the similarity key, a small budget falls inside a large group of questions tied on the
+first two keys: on the near-copy ingestion of #3 (20 chunks, seed 42) 116 of the 203 candidates tie
+at (affected, one new chunk), so the order among them would be the order of the ids, which says
+nothing about the graph. Ranking by closeness to the new chunks answers the question the selector
+is asked, which questions to re-test. The baselines (#6) must rank by the same key to stay
+comparable.
 """
 
 from collections.abc import Callable, Sequence
@@ -152,17 +154,41 @@ def select_questions(
     qrels: dict[str, list[str]],
     budget: int,
     rules: Rules = Rules(),
+    closeness: dict[str, float] | None = None,
 ) -> list[str]:
+    """Rank the questions with a correct chunk in a marked node, best first.
+
+    `closeness` maps a chunk id to the cosine similarity between it and the nearest new chunk; the
+    question takes the highest value over its correct chunks. Missing chunks score -1, below any
+    real cosine similarity, so an unknown chunk never wins a tie it should not.
+    """
     diff = diff_graphs(graph_before, graph_after, new_chunk_ids, rules)
-    keys: dict[str, tuple[int, int, str]] = {}
+    keys: dict[str, tuple[int, int, float, str]] = {}
     for question_id, chunk_ids in qrels.items():
         correct = set(chunk_ids)
         holders = [v for v in diff.marked if graph_after.nodes[v] & correct]
         if holders:
             tier = 0 if any(v in diff.affected for v in holders) else 1
             most_new = max(diff.new_chunk_counts[v] for v in holders)
-            keys[question_id] = (tier, -most_new, question_id)
+            near = max((closeness.get(c, -1.0) for c in correct), default=-1.0) if closeness else 0.0
+            keys[question_id] = (tier, -most_new, -near, question_id)
     return sorted(keys, key=keys.__getitem__)[: max(budget, 0)]
+
+
+def new_chunk_closeness(after: "Corpus", new_chunk_ids: set[str]) -> dict[str, float]:
+    """Cosine similarity of each chunk of `after` to the nearest new chunk."""
+    import numpy as np
+
+    ids = [c.chunk_id for c in after.chunks]
+    is_new = np.array([i in new_chunk_ids for i in ids])
+    if not is_new.any():
+        return {}
+    x = np.asarray(after.embeddings, dtype=np.float64)
+    norms = np.linalg.norm(x, axis=1)
+    norms[norms == 0] = 1.0
+    unit = x / norms[:, None]
+    nearest = (unit @ unit[is_new].T).max(axis=1)
+    return {chunk_id: float(s) for chunk_id, s in zip(ids, nearest)}
 
 
 class MapperSelector(Generic[P]):
@@ -203,6 +229,7 @@ class MapperSelector(Generic[P]):
         graph_before = self._build(before, params)
         graph_after = self._build(after, params)
         qrels = {q: before.qrels[q] for q in questions if q in before.qrels}
+        closeness = new_chunk_closeness(after, new_chunk_ids)
         return select_questions(
-            graph_before, graph_after, new_chunk_ids, qrels, budget, self._rules
+            graph_before, graph_after, new_chunk_ids, qrels, budget, self._rules, closeness
         )
