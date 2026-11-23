@@ -38,10 +38,12 @@ The first `budget` ids are returned; a budget above the number of candidates ret
 
 Without the similarity key, a small budget falls inside a large group of questions tied on the
 first two keys: on the near-copy ingestion of #3 (20 chunks, seed 42) 116 of the 203 candidates tie
-at (affected, one new chunk), so the order among them would be the order of the ids, which says
-nothing about the graph. Ranking by closeness to the new chunks answers the question the selector
-is asked, which questions to re-test. The baselines (#6) must rank by the same key to stay
-comparable.
+at (affected, one new chunk), so the order among them is the order of the ids, which says nothing
+about the graph. The key is available (`closeness`) but the selector does not use it yet: placed
+after the first two keys it leaves the order unchanged at budget 15 on that ingestion (0 / 2
+before and after) and only moves the two broken questions from ranks 16-17 to 18-28, because a
+question in a node with two new chunks still wins. Where it belongs is a measurement for #7, and
+the baselines (#6) must use the same key.
 """
 
 from collections.abc import Callable, Sequence
@@ -229,7 +231,6 @@ class MapperSelector(Generic[P]):
         graph_before = self._build(before, params)
         graph_after = self._build(after, params)
         qrels = {q: before.qrels[q] for q in questions if q in before.qrels}
-        closeness = new_chunk_closeness(after, new_chunk_ids)
         return select_questions(
-            graph_before, graph_after, new_chunk_ids, qrels, budget, self._rules, closeness
+            graph_before, graph_after, new_chunk_ids, qrels, budget, self._rules
         )
