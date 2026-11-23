@@ -35,6 +35,11 @@ affected tier first (0 if one of those chunks lies in an affected node, else 1),
 number of new chunks among the marked nodes holding one of its correct chunks (more first), then
 question id. The first `budget` ids are returned; a budget above the number of candidates returns
 all of them.
+
+At a small budget the cut can fall inside a large group of questions tied on the first two keys:
+on the near-copy ingestion of #3 (20 chunks, seed 42) 116 of the 203 candidates tie at
+(affected, one new chunk), so their order is the order of the ids and the selection among them is
+arbitrary. Which key to add, and whether the baselines share it, is the decision of #7.
 """
 
 from collections.abc import Callable, Sequence
