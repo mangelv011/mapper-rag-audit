@@ -1,0 +1,25 @@
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Mapper and TDA on text.}
+Mapper builds a graph from a lens function, an overlapping cover of its
+range and a clustering of each preimage~\cite{singh2007topological}.
+Rathore et al.~\cite{rathore2023topobert} apply Mapper to the embeddings of
+fine-tuned BERT models to see how fine-tuning changes them.
+KeplerMapper~\cite{vanveen2019kepler} and
+tda-mapper~\cite{simi2025tdamapper} are maintained Python implementations.
+
+\paragraph{Mapper on RAG corpora.}
+Prior work applies Mapper to embedding spaces of language
+models~\cite{rathore2023topobert}. We compare the corpus before and after
+an ingestion; we found no prior work that uses Mapper to choose which RAG
+test questions to re-run.
+
+\paragraph{Regression test selection.}
+To cut the cost of re-running a test suite, regression testing
+\emph{minimises}, \emph{selects} or \emph{prioritises}
+tests~\cite{yoo2012regression}. Rothermel and Harrold~\cite{rothermel1997safe}
+select tests safely by comparing control-flow graphs of the old and new
+program. In our case the data changes, not the code, and the Mapper
+graphs before and after the ingestion take the place of the control-flow
+graphs.

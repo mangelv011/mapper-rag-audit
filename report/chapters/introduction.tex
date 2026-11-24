@@ -1,1 +1,31 @@
 \section{Introduction}
+\label{sec:introduction}
+
+A retrieval-augmented generation (RAG) system retrieves the passages most
+similar to a question and lets a language model answer from
+them~\cite{lewis2020rag}. If the correct passage is not retrieved, the
+answer cannot use it.
+
+The corpus of a RAG system changes with every \emph{ingestion} of new
+documents, and an ingestion can break questions that used to work: a new
+passage that looks relevant but is not can push the correct one out of the
+retrieved set. A few injected passages are enough to be retrieved for many
+questions~\cite{zhong2023poisoning, zou2025poisonedrag}. Re-running the
+whole test set after each ingestion is costly. Software engineering faces
+the same problem and solves it with regression test selection: re-run only
+the tests the change can affect~\cite{rothermel1997safe, yoo2012regression}.
+
+The damage of an ingestion is local: it only affects questions whose
+embeddings lie near the new passages (Section~\ref{sec:background}).
+Mapper~\cite{singh2007topological} summarises a point cloud as a graph of
+overlapping clusters, so comparing the graphs before and after an
+ingestion shows which regions changed. Our research question is:
+\begin{quote}
+\emph{Does Mapper find the questions broken by an ingestion with fewer
+re-tests than random sampling or clustering?}
+\end{quote}
+
+We use SciFact~\cite{wadden2020scifact} in the BEIR
+format~\cite{thakur2021beir} and the \texttt{bge-small-en-v1.5} embedding
+model~\cite{xiao2024cpack}; their sources and licences are given in the
+references.
