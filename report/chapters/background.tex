@@ -16,13 +16,16 @@ written $\mathrm{top}_k(q,C)$. A question with correct chunks $R(q)$
 \emph{fails} when $R(q) \cap \mathrm{top}_k(q,C) = \emptyset$. We use $k=5$.
 
 \paragraph{How an ingestion breaks a question.}
-An ingestion adds chunks $N$. Let $m(q) = \max_{r \in R(q)} s(q,r)$. A
-question that passed fails afterwards exactly when
+An ingestion appends chunks $N$ to the corpus. Ties in $s$ are broken by
+corpus order, so older chunks rank first. Let $m(q) = \max_{r \in R(q)} s(q,r)$,
+and let $\rho(q)$ be the rank, counting from 1, of the first correct chunk when
+all of $C$ is ranked; the question passes when $\rho(q) \le k$. It fails
+afterwards exactly when
 \[
-  \bigl|\{ n \in N : s(q,n) > m(q) \}\bigr|
-  \;\ge\; k - \bigl|\{ c \in C \setminus R(q) : s(q,c) > m(q) \}\bigr| ,
+  \bigl|\{ n \in N : s(q,n) > m(q) \}\bigr| \;\ge\; k - \rho(q) + 1 ,
 \]
-with ties going to older chunks. The correct chunk is not deleted but
+since a new chunk tied with $m(q)$ ranks after the correct chunk. The correct
+chunk is not deleted but
 \emph{displaced} by new chunks closer to the question. Since
 $\|e(q)-e(n)\|^2 = 2 - 2\,s(q,n)$ for unit vectors, only questions near the
 new chunks in the embedding space can break.
