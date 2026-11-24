@@ -1,0 +1,46 @@
+name: report
+
+on:
+  push:
+    branches: [main]
+    paths: ["report/**", ".github/workflows/report.yml"]
+    tags: ["v*"]
+  pull_request:
+    paths: ["report/**", ".github/workflows/report.yml"]
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main.tex
+          working_directory: report
+      # The PDF must not ship with "??" references, "[?]" citations or missing figures.
+      - name: Check the log for undefined references and missing files
+        run: |
+          if grep -nE "undefined|not found" report/main.log; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report-pdf
+          path: report/main.pdf
+
+  # On a version tag, publish the two deliverables: the report PDF and a zip of the code.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: report
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: report-pdf
+      # git archive packs tracked files only, so data/, .venv/ and build output stay out.
+      - run: git archive --format=zip --prefix=mapper-rag-audit/ -o "mapper-rag-audit-$GITHUB_REF_NAME.zip" "$GITHUB_REF_NAME"
+      - run: mv main.pdf "mapper-rag-audit-$GITHUB_REF_NAME.pdf"
+      - run: gh release create "$GITHUB_REF_NAME" --generate-notes "mapper-rag-audit-$GITHUB_REF_NAME.pdf" "mapper-rag-audit-$GITHUB_REF_NAME.zip"
+        env:
+          GH_TOKEN: ${{ github.token }}
