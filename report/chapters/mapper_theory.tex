@@ -21,8 +21,8 @@ $M_f(X,\mathcal{I})=N(\mathcal{V})$; the \emph{Mapper graph} is its
 1-skeleton.
 \end{definition}
 
-On a point cloud the components are replaced by clusters, here
-single-linkage clusters at scale $\delta$~\cite{carriere2018statistical}.
+On a point cloud the components are replaced by clusters; the results below
+use single-linkage clusters at scale $\delta$~\cite{carriere2018statistical}.
 If no three intervals meet ($g<1/2$), the nerve is already a
 graph~\cite[Lemma 2.12]{carriere2018structure}.
 
@@ -204,3 +204,20 @@ clustering and changes only the cover.
 The lesson for our corpus is that the cover must be fine enough to
 separate the regions we care about, and the overlaps wide enough for
 neighbouring clusters to share points.
+
+\paragraph{From the circle to the corpus.} The SciFact graph follows the
+same steps with other choices: the lens is the first principal component
+of the chunk embeddings, the cover has 15 intervals with gain $g=\frac12$,
+and the clusters come from average linkage with cosine distance cut at
+$0.27$. Since $g=\frac12$, we keep only the Mapper graph. Single linkage
+suits the circle because empty space separates its arcs. Text embeddings
+have no such gaps: the median cosine distance from a chunk to its nearest
+neighbour is $0.14$, and between two random chunks $0.37$. With single
+linkage at $\delta=0.14$, 52\% of the chunks stay alone in one-chunk nodes;
+at $\delta=0.20$, chains of close pairs put 20\% of the corpus in one node.
+Average linkage merges two groups only when their mean distance is below
+the cut, so one close pair does not join two topics. The theorems above
+assume single-linkage clusters and a Morse-type lens on a manifold, so they
+do not hold for this graph as stated. They explain what the cover and the
+overlap control; we measure the stability of the selected regions in the
+experiments. The method section gives the details.
