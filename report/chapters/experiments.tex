@@ -1,1 +1,24 @@
 \section{Experiments}
+
+\subsection{SciFact trap ingestions}
+
+We used the SciFact test split~\cite{wadden2020scifact} as distributed by
+BEIR~\cite{thakur2021beir}, with 300 questions and 5,658 chunks
+from 5,183 abstracts. We embedded the chunks and questions with
+\texttt{BAAI/bge-small-en-v1.5} and ranked chunks by cosine similarity.
+A question passed if at least one chunk from a relevant document appeared
+among the five highest-ranked chunks.
+
+We ran three independent ingestions from the same original corpus. Each
+added 20 synthetic chunks targeting the same 20 distinct questions that
+passed before ingestion, sampled using seed 42. A \texttt{near\_copy}
+alters details in a relevant chunk. A \texttt{contradiction} uses
+rule-based edits intended to reverse or negate a finding. A \texttt{mix}
+combines part of a relevant chunk with part of a chunk from a different
+document, sampled from the lowest quartile of cosine similarity to the source
+chunk. The original relevance judgments were used in every run.
+
+We checked all 300 questions after each ingestion. A regression is a
+question that passed on the original corpus and failed after ingestion. We
+report regressions among targeted questions and across all questions that
+initially passed.

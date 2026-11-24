@@ -1,1 +1,251 @@
 \section{Mapper theory}
+\label{sec:mapper}
+
+\paragraph{Notation.}
+$X$ is a topological space (in practice a point cloud $X_n\subset\mathbb{R}^D$),
+$f\colon X\to\mathbb{R}$ a continuous \emph{lens}, $\mathcal{I}$ a cover of $f(X)$
+by open intervals, $N(\cdot)$ the nerve, $M_f$ the Mapper, $\bar M_f$ the
+MultiNerve Mapper, $R_f(X)$ the Reeb graph with induced map $\tilde f$,
+$\mathrm{Dg}$ an extended persistence diagram and $d_\Delta$ the bottleneck
+distance~\cite{carriere2018statistical} (written $d_b$
+in~\cite{carriere2018structure}). The resolution $r$ is the interval
+length, the gain $g$ the overlap fraction and $\delta$ the clustering
+scale. We mark each claim as a \emph{theorem} (quoted with its
+hypotheses), a \emph{heuristic} or an \emph{observed} output of our code.
+
+\subsection{Construction and the nerve lemma}
+
+\begin{definition}[Mapper~\cite{singh2007topological, carriere2018structure}]
+Split each $f^{-1}(I)$, $I\in\mathcal{I}$, into its path-connected
+components; these form the refined pullback cover $\mathcal{V}$. The
+\emph{nerve} $N(\mathcal{V})$ has a vertex per element and a $k$-simplex per
+$k+1$ elements with a common point. The \emph{Mapper} is
+$M_f(X,\mathcal{I})=N(\mathcal{V})$; the \emph{Mapper graph} is its
+1-skeleton.
+\end{definition}
+
+On a point cloud the components are replaced by clusters; the statistical
+results use the components of the $\delta$-neighbourhood graph, i.e.\
+single linkage at scale $\delta$~\cite[Sec.~2.1]{carriere2018statistical}.
+In a \emph{minimal} open interval cover (no element lies in the union of
+the others) no three elements meet~\cite[Lemma~2.12]{carriere2018structure},
+so the nerve is a graph. Separately, for intervals of equal length $r$
+and overlap $g\,r$, interval $i+2$ starts $2(1-g)\,r$ after interval $i$,
+so $g<\frac12$ also rules out triple intersections.
+
+\begin{theorem}[Nerve lemma~{\cite[Cor.~4G.3]{hatcher2002algebraic}}]
+\label{thm:nerve}
+If $\mathcal{U}$ is an open cover of a paracompact space $X$ and every
+non-empty finite intersection of its sets is contractible (a \emph{good}
+cover), then $X$ is homotopy equivalent to $N(\mathcal{U})$.
+\end{theorem}
+
+Mapper covers often break this hypothesis: two clusters can meet in
+several pieces, the nerve draws one edge, and the loop they close is lost
+(Figure~\ref{fig:toy-bad}, left). The \emph{MultiNerve Mapper} keeps one
+edge per piece~\cite[Sec.~3]{carriere2018structure}.
+
+\subsection{The Reeb graph and Mapper as its approximation}
+\label{sec:reeb}
+
+\begin{definition}[Reeb graph~{\cite[Def.~2.6]{carriere2018structure}}]
+$R_f(X)=X/{\sim_f}$, where $x\sim_f y$ if $f(x)=f(y)$ and $x,y$ lie in the
+same connected component of $f^{-1}(f(x))$.
+\end{definition}
+
+It is a multigraph when $f$ is of \emph{Morse type}~\cite[Def.~2.1]{carriere2018structure}.
+Mapper uses intervals instead of level sets, so it is a \emph{pixelised}
+Reeb graph. Each feature of $R_f(X)$ (trunk, upward or downward branch, or hole) is a
+point $(x,y)$ of $\mathrm{Dg}(\tilde f)$ whose vertical distance to the
+diagonal, $|y-x|$, is its span in lens values. Below, $\mathcal{I}$ is a
+\emph{gomic} (generic, open, minimal interval cover; \emph{generic}: the
+part of an interval not covered by the others has no single-point
+component~\cite[Sec.~2.5]{carriere2018structure}), and its
+\emph{granularity} is the supremum of its interval lengths.
+
+\paragraph{Staircases.} For an interval $I$ with endpoints $a\le b$, let
+$Q_I^+=\{(x,y):a\le x\le y\le b\}$, the half-square above the diagonal
+and including it, and $Q_I^-=\{(x,y):a\le y<x\le b\}$, the half-square
+strictly below it. The cover defines one \emph{staircase} per type of
+point; for holes it is $Q^{\mathcal I}_{E^-}=\bigcup_{I\in\mathcal{I}}Q_I^-$.
+\emph{Theorem (structure):} for $f$ of Morse type and a gomic, the
+diagram of $\bar M_f$ is in bijection with $\mathrm{Dg}(\tilde f)$ minus
+the points lying in the staircase of their
+type~\cite[Thm.~4.3]{carriere2018structure}; the proof uses zigzag
+persistence and a Mayer--Vietoris half-pyramid. The ordinary Mapper also
+removes the holes in the \emph{extended staircase}
+$Q^{\mathcal I}_E=\bigcup_{I\cap J\neq\emptyset}Q^-_{I\cup J}$, which
+replaces $Q^{\mathcal I}_{E^-}$~\cite[Sec.~4.3, Eq.~(6)]{carriere2018structure}.
+A loop with lens values in $[m,M]$ is the point $(M,m)$, so it survives
+in $\bar M_f$ iff no interval contains $[m,M]$, and in $M_f$ iff no union
+of two intersecting intervals does.
+
+\begin{theorem}[{\cite[Cor.~4.6]{carriere2018structure}}]
+\label{thm:convergence}
+If $f$ is of Morse type and $\mathcal{I}$ is a gomic of $f(X)$ with
+granularity at most $\varepsilon$, then
+$\mathrm{Dg}(\tilde f)\setminus\{|y-x|\le\varepsilon\}
+\subseteq\mathrm{Dg}(\bar M_f(X,\mathcal{I}))\subseteq\mathrm{Dg}(\tilde f)$,
+and $d_\Delta\bigl(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\tilde f)\bigr)\le\varepsilon/2$.
+\end{theorem}
+
+Features of the Reeb graph whose vertical distance to the diagonal
+exceeds the cover granularity $\varepsilon$ are preserved by the
+MultiNerve Mapper, none is invented, and $\bar M_f$ converges to $R_f(X)$
+as $\varepsilon\to0$. The convergence of Corollary~4.6 also holds for
+$M_f$, with $Q^{\mathcal I}_E$ in place of
+$Q^{\mathcal I}_{E^-}$~\cite[Sec.~4.3, Cor.~4.6]{carriere2018structure}. \emph{Heuristic:} ``features shorter than the intervals are
+lost'' is not the criterion. A short span is necessary to fall in a
+staircase, not sufficient: the feature is lost only if an interval (or,
+for $M_f$, a union of two) actually contains it.
+
+\subsection{Stability and parameter selection}
+
+\begin{theorem}[{\cite[Def.~5.1, Thm.~5.2]{carriere2018structure}}]
+Let $d_{\mathcal{I}}$ be the bottleneck distance computed per type of
+point, with unmatched points charged their $\ell_\infty$ distance to the
+staircase of their type instead of to the diagonal. For Morse-type
+$f,f'$ and a gomic $\mathcal{I}$,
+$d_{\mathcal{I}}\bigl(\mathrm{Dg}(M_f),\mathrm{Dg}(M_{f'})\bigr)
+\le d_{\mathcal{I}}\bigl(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\bar M_{f'})\bigr)
+\le\|f-f'\|_\infty$.
+\end{theorem}
+
+A small change of the lens moves each feature little relative to the
+staircases. For a gomic of granularity at most $\varepsilon$ the paper
+relates the two distances by
+$d_\Delta(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\bar M_{f'}))\le\frac{\varepsilon}{2}+d_{\mathcal I}(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\bar M_{f'}))$
+and
+$d_\Delta(\mathrm{Dg}(M_f),\mathrm{Dg}(M_{f'}))\le\varepsilon+d_{\mathcal I}(\mathrm{Dg}(M_f),\mathrm{Dg}(M_{f'}))$~\cite[Thm.~5.2, Eqs.~(9)--(10)]{carriere2018structure}.
+
+\begin{theorem}[{\cite[Thm.~7]{carriere2018statistical}}]
+\label{thm:cmo}
+Let $X\subset\mathbb{R}^D$ be a smooth compact submanifold with reach
+$\mathrm{rch}>0$ and convexity radius $\rho>0$, $X_n\subset X$ a finite
+sample, and $f$ of Morse type with modulus of continuity $\omega$. Let
+$M_{r,g,\delta}(X_n)$ use open intervals of length $r$, gain
+$0<g<\frac12$ and single linkage at scale $\delta$. If
+(1) $\delta\le\frac14\min\{\mathrm{rch},\rho\}$,
+(2) $V(\delta):=\max\{|f(x)-f(x')|:x,x'\in X_n,\|x-x'\|\le\delta\}<g\,r$ and
+(3) $4\,d_H(X,X_n)\le\delta$, then
+$d_\Delta\bigl(\mathrm{Dg}(\tilde f),\mathrm{Dg}(M_{r,g,\delta}(X_n))\bigr)\le r+2\,\omega(\delta)$.
+\end{theorem}
+
+The authors' rule takes $g\in(\frac13,\frac12)$, $\delta$ the Hausdorff
+distance from $X_n$ to a subsample of $n/(\log n)^{1+\beta}$ points, and
+$r$ slightly above $V(\delta)/g$~\cite[Eq.~(9)]{carriere2018statistical};
+under regularity assumptions it is minimax optimal up to a log
+factor~\cite[Props.~11--13]{carriere2018statistical}. Our embeddings are
+not known to satisfy them, so the rule is a default, not a guarantee.
+
+\subsection{Why a graph and not a clustering}
+
+A clustering is a partition. The Mapper graph adds \emph{neighbourhood}
+(an edge means two regions touch) and makes \emph{structural change}
+visible: after new data arrive, an edge can appear, a node can split or a
+loop can close, each in a specific region. Our selector re-tests the
+questions in those regions.
+
+\subsection{Worked example: a noisy circle}
+\label{sec:toy}
+
+We build the Mapper of a circle (Figure~\ref{fig:toy}) with
+\texttt{experiments/toy\_circle.py}, keeping apart the theory for the
+continuous circle and the observed output on the sample.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.31\textwidth]{figures/toy/01_data.pdf}\hfill
+  \includegraphics[width=0.31\textwidth]{figures/toy/02_lens.pdf}\hfill
+  \includegraphics[width=0.31\textwidth]{figures/toy/03_cover.pdf}\\[4pt]
+  \includegraphics[width=0.31\textwidth]{figures/toy/04_clusters.pdf}\hfill
+  \includegraphics[width=0.31\textwidth]{figures/toy/05_nerve.pdf}\hfill
+  \includegraphics[width=0.31\textwidth]{figures/toy/06_graph.pdf}
+  \caption{Mapper on a noisy circle (output of \texttt{toy\_circle.py}).
+  Top: data, lens (height), cover by 6 overlapping intervals. Bottom:
+  clusters per band, nerve, and the final graph with one loop.}
+  \label{fig:toy}
+\end{figure}
+
+\paragraph{Steps.} (1) \emph{Data:} 300 points on the unit circle with
+Gaussian noise $\sigma=0.06$ (seed 0). In the realized sample, the points
+lie at distances between $0.82$ and $1.14$ from the centre.
+(2) \emph{Lens:} the height $f(x,y)=y$, with sample range
+$[-1.07,1.08]$. On the continuous circle its Reeb graph is the circle,
+and the loop is the extended point $(1,-1)$, at vertical distance $2$.
+(3) \emph{Cover:} 6 open intervals of length $r=0.48$ with $g=30\%$
+(overlap $0.14$, starts $0.33$ apart). As $g<\frac12$, no three meet;
+restricted to $[-1,1]$ it is a gomic with $\varepsilon=0.48$.
+(4) \emph{Clustering:} single linkage at $\delta=0.25$ in each band.
+(5) \emph{Nerve:} clusters in consecutive bands are joined when they
+share points.
+
+\paragraph{Observed.} The end bands give one cluster each and the four
+middle bands two (one per side): 10 nodes, 10 edges, hence
+$E-V+1=1$ loop. With $\delta=0.25$, $V(\delta)=0.25>g\,r=0.14$, so
+condition~(2) of Theorem~\ref{thm:cmo} fails and yet the graph is right:
+the theorem is sufficient, not necessary.
+
+\paragraph{Theory (continuous circle).} The refined cover is good (its
+elements and their non-empty intersections are arcs), so by
+Theorem~\ref{thm:nerve} the nerve is homotopy equivalent to $S^1$. In
+staircase terms, the loop's span $2$ exceeds $\varepsilon$, so it is in
+$\bar M_f$ (Theorem~\ref{thm:convergence}), and the longest union of two
+consecutive intervals ($0.81$) cannot contain $[-1,1]$, so it is in $M_f$
+too. The sample agrees with this, but the theorems do not guarantee it
+for the sample.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{figures/toy/07_bad_coarse.pdf}\hfill
+  \includegraphics[width=0.48\textwidth]{figures/toy/08_bad_no_overlap.pdf}
+  \caption{Two covers that lose the loop (output of
+  \texttt{toy\_circle.py}). Left: two intervals; their overlap has two
+  pieces but the nerve draws one edge. Right: no overlap, no edges.}
+  \label{fig:toy-bad}
+\end{figure}
+
+\paragraph{Bad covers} (Figure~\ref{fig:toy-bad}, same data and clustering).
+\emph{Too coarse, 2 intervals of length 1.26.} Observed: 2 nodes, 1
+edge, no loop. Theory: the overlap has two pieces, so the cover is not
+good; the union of the two intervals contains $[-1,1]$, so the loop is in
+$Q^{\mathcal I}_E$ and $M_f$ loses it, while neither interval contains
+it, so $\bar M_f$ keeps it. \emph{No overlap.} Observed: the same 10
+clusters but no edges; the intervals do not form a cover whose
+consecutive elements meet, so no result applies. \emph{Heuristic:} the
+cover must be fine enough to separate the regions we care about, and the
+overlaps wide enough for neighbouring clusters to share points.
+
+\paragraph{From the circle to the corpus.} The SciFact graph uses the
+first principal component as lens, 15 intervals with $g=\frac12$, and
+average linkage with cosine distance cut at $0.27$. These choices were
+set on measurements (\#4), and the theorems above do not cover the
+resulting graph.
+
+\emph{Gain.} $g=\frac12$ roughly halves the number of components against
+$30\%$ (observed). It lies outside $0<g<\frac12$ (Theorem~\ref{thm:cmo})
+and $(\frac13,\frac12)$. In KeplerMapper~2.1.0 the intervals are closed,
+of length $r=0.098$, and start $r/2$ apart. Hence each interior interval
+is contained in the union of its two neighbours, so the cover is not
+minimal and not a gomic. Theorem~\ref{thm:convergence} and the stability
+theorem therefore do not apply. Intervals $i$ and $i+2$ share an
+endpoint, so triple intersections can occur at those 13 points. Observed on
+SciFact: no chunk falls on one (the closest is $1.6\times10^{-6}$ away)
+and the nerve has no triangle; this is not guaranteed in general.
+
+\emph{Graph.} We use the ordinary Mapper graph as a practical choice:
+KeplerMapper builds it and the graph diff (\#5) compares nodes and edges.
+It does not follow from the theorems, and $M_f$ can lose loops that
+$\bar M_f$ keeps.
+
+\emph{Clustering.} Text embeddings have no empty space between topics
+(observed): the median cosine distance to the nearest neighbour is
+$0.14$, and $0.37$ between random chunks. Single linkage at $0.14$
+leaves 52\% of the chunks in one-chunk nodes; at $0.20$, chaining puts
+20\% of the corpus in one node. Average linkage merges two groups only
+when their mean distance is below the cut, so one close pair does not
+join two topics; but the theorems assume single linkage.
+
+The theorems therefore explain what the cover and the overlap control,
+not what our graph guarantees; the stability of the selected regions is
+measured in the experiments (\#8). The method section gives the details.

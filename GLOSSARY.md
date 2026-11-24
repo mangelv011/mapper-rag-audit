@@ -11,3 +11,8 @@
 - **broken question**: a question that passes before an ingestion and fails after it. Questions that already fail before are never counted as broken.
 - **selector**: a method that, given the corpus before and after an ingestion, ranks the questions to re-test (Mapper or a baseline). Interface: `mapper_rag_audit.selection.Selector`.
 - **budget**: the maximum number of questions a selector may pick for re-testing.
+- **Mapper graph**: the graph Mapper builds over the chunk embeddings. Each node holds a set of chunks; an edge joins two nodes that share at least one chunk.
+- **node**: a vertex of a Mapper graph, identified by an id and holding chunk ids.
+- **affected node**: a node of the graph after an ingestion that the diff rules flag as changed: it received new chunks, gained an edge, or took part in a split or merge.
+- **marked node**: an affected node, or a direct neighbour of one when neighbour expansion is on. Questions whose correct chunk lies in a marked node are candidates.
+- **matching**: the map from each node of the graph after an ingestion to the node of the graph before it that shares most old chunks with it (Jaccard).
