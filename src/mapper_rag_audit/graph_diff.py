@@ -1,7 +1,6 @@
 """Pick the questions to re-run after an ingestion by comparing two Mapper graphs.
 
-The graph format is provisional; the Mapper builder will produce it. An edge means the two
-nodes share at least one chunk, but edges are taken as given and never recomputed.
+An edge means the two nodes share at least one chunk. The diff uses the edges in each graph.
 
 Both graphs come from the same Mapper parameters: `graph_before` on the corpus before the
 ingestion, `graph_after` on the corpus after it.
@@ -15,8 +14,8 @@ Jaccard(u, old chunks of v), same tie rule.
 The tie on the node id matters because the cover overlaps: a cluster that lies in the overlap of
 two intervals is a node in each of them, with the same chunks, so such nodes come in pairs. Jaccard
 cannot tell the pair apart, and without the tie rule both would match the first node of the pair
-and the duplicate would be counted as a split. With stable node ids (same id means same region) the
-pair matches itself and the split rules only see real splits.
+and the duplicate would be counted as a split. When the duplicate pair keeps its node ids
+across the two graphs, each node matches itself.
 
 Rules that mark an after-node as affected; each has a flag in `Rules`, all on by default:
 - new_chunks: v contains at least one new chunk.
@@ -50,15 +49,12 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
+import numpy as np
+
 from mapper_rag_audit.data import Corpus
+from mapper_rag_audit.mapper import MapperGraph
 
 P = TypeVar("P")
-
-
-@dataclass(frozen=True)
-class MapperGraph:
-    nodes: dict[str, frozenset[str]]  # node id -> chunk ids
-    edges: frozenset[frozenset[str]]  # each edge is a set of two node ids
 
 
 @dataclass(frozen=True)
@@ -177,10 +173,8 @@ def select_questions(
     return sorted(keys, key=keys.__getitem__)[: max(budget, 0)]
 
 
-def new_chunk_closeness(after: "Corpus", new_chunk_ids: set[str]) -> dict[str, float]:
+def new_chunk_closeness(after: Corpus, new_chunk_ids: set[str]) -> dict[str, float]:
     """Cosine similarity of each chunk of `after` to the nearest new chunk."""
-    import numpy as np
-
     ids = [c.chunk_id for c in after.chunks]
     is_new = np.array([i in new_chunk_ids for i in ids])
     if not is_new.any():
@@ -201,7 +195,7 @@ class MapperSelector(Generic[P]):
     ids of `after` that are not in `before`, or whose text changed. The questions to rank are
     those in `questions` that have qrels in `before`.
 
-    An ingestion that removes chunks is not supported: it raises ValueError.
+    The after corpus must start with the original chunk ids in order.
     """
 
     def __init__(
@@ -226,6 +220,8 @@ class MapperSelector(Generic[P]):
             raise ValueError(
                 f"chunks removed by the ingestion: {len(removed)}; removals are not supported"
             )
+        if [chunk.chunk_id for chunk in after.chunks[:len(before.chunks)]] != list(texts_before):
+            raise ValueError("the after corpus must preserve the original chunk order")
         new_chunk_ids = {i for i, text in texts_after.items() if texts_before.get(i) != text}
         params = self._fit(before)
         graph_before = self._build(before, params)

@@ -463,3 +463,13 @@ def test_closeness_is_the_cosine_to_the_nearest_new_chunk():
     assert closeness["b#0"] == pytest.approx(1.0)
     assert closeness["a#0"] == pytest.approx(0.0)
     assert closeness["c#0"] == pytest.approx(0.0)
+
+
+def test_reordered_chunks_raise_before_building_either_graph():
+    before = corpus({"a#0": "x", "b#0": "y"}, {"q": ["a#0"]})
+    after = corpus({"b#0": "y", "a#0": "x"}, before.qrels)
+    fakes = Fakes({})
+    selector = MapperSelector(fakes.fit, fakes.build)
+    with pytest.raises(ValueError, match="original chunk order"):
+        selector.select(before, after, ["q"], 5)
+    assert fakes.fit_calls == []
