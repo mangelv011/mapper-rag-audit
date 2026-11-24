@@ -72,7 +72,8 @@ class KMeansSelector:
     Parameters:
     - `n_clusters`: k for k-means. Rule: k equals the number of nodes of the Mapper graph of the
       corpus before the ingestion, so both methods split the corpus into the same number of
-      regions. The experiment (#7) passes that number in.
+      regions. This is a heuristic for a fair comparison, not something the theory
+      prescribes. The experiment (#7) passes that number in.
     - `seed`, `n_init`: k-means is seeded and restarted `n_init` times, keeping the best fit.
 
     `select` fits k-means on the chunk embeddings of `before` (unit length, so Euclidean
