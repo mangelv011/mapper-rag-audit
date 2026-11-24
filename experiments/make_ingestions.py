@@ -88,17 +88,19 @@ def main() -> None:
     failing_before = failing_questions(corpus, all_qids, k=args.k)
     passing_before = len(all_qids) - len(failing_before)
 
-    n_broken = len(ingestion.broken_questions)
+    broken_targets = set(ingestion.broken_questions) & set(ingestion.target_questions)
+    n_broken_targets = len(broken_targets)
     n_targets = len(ingestion.target_questions)
-    broken_pct = (n_broken / passing_before * 100) if passing_before > 0 else 0.0
+    n_broken_total = len(ingestion.broken_questions)
+    broken_pct = (n_broken_total / passing_before * 100) if passing_before > 0 else 0.0
 
     print(
         f"Ingestion generated: type={args.trap_type} n={args.n} seed={args.seed} k={args.k}"
     )
     print(f"Targeted questions: {n_targets}")
     print(
-        f"Broken questions: {n_broken} broken of {n_targets} targeted questions "
-        f"({broken_pct:.2f}% of the {passing_before} that initially passed)"
+        f"Broken questions: {n_broken_targets} broken of {n_targets} targeted questions "
+        f"({n_broken_total} of {passing_before} that initially passed, {broken_pct:.2f}%)"
     )
     print(f"Saved to: {out_dir}")
 
