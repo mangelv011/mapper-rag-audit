@@ -6,9 +6,12 @@ $X$ is a topological space (in practice a point cloud $X_n\subset\mathbb{R}^D$),
 $f\colon X\to\mathbb{R}$ a continuous \emph{lens}, $\mathcal{I}$ a cover of $f(X)$
 by open intervals, $N(\cdot)$ the nerve, $M_f$ the Mapper, $\bar M_f$ the
 MultiNerve Mapper, $R_f(X)$ the Reeb graph with induced map $\tilde f$,
-$\mathrm{Dg}$ an extended persistence diagram and $d_B$ the bottleneck
-distance. The resolution $r$ is the interval length, the gain $g$ the
-overlap fraction and $\delta$ the clustering scale.
+$\mathrm{Dg}$ an extended persistence diagram and $d_\Delta$ the bottleneck
+distance~\cite{carriere2018statistical} (written $d_b$
+in~\cite{carriere2018structure}). The resolution $r$ is the interval
+length, the gain $g$ the overlap fraction and $\delta$ the clustering
+scale. We mark each claim as a \emph{theorem} (quoted with its
+hypotheses), a \emph{heuristic} or an \emph{observed} output of our code.
 
 \subsection{Construction and the nerve lemma}
 
@@ -21,10 +24,14 @@ $M_f(X,\mathcal{I})=N(\mathcal{V})$; the \emph{Mapper graph} is its
 1-skeleton.
 \end{definition}
 
-On a point cloud the components are replaced by clusters; the results below
-use single-linkage clusters at scale $\delta$~\cite{carriere2018statistical}.
-If no three intervals meet ($g<1/2$), the nerve is already a
-graph~\cite[Lemma 2.12]{carriere2018structure}.
+On a point cloud the components are replaced by clusters; the statistical
+results use the components of the $\delta$-neighbourhood graph, i.e.\
+single linkage at scale $\delta$~\cite[Sec.~2.1]{carriere2018statistical}.
+In a \emph{minimal} open interval cover (no element lies in the union of
+the others) no three elements meet~\cite[Lemma~2.12]{carriere2018structure},
+so the nerve is a graph. Separately, for intervals of equal length $r$
+and overlap $g\,r$, interval $i+2$ starts $2(1-g)\,r$ after interval $i$,
+so $g<\frac12$ also rules out triple intersections.
 
 \begin{theorem}[Nerve lemma~{\cite[Cor.~4G.3]{hatcher2002algebraic}}]
 \label{thm:nerve}
@@ -34,9 +41,9 @@ cover), then $X$ is homotopy equivalent to $N(\mathcal{U})$.
 \end{theorem}
 
 Mapper covers often break this hypothesis: two clusters can meet in
-several separate pieces, the nerve draws a single edge, and the loop they
-close is lost (Figure~\ref{fig:toy-bad}, left). The \emph{MultiNerve
-Mapper} keeps one edge per piece~\cite[Sec.~3]{carriere2018structure}.
+several pieces, the nerve draws one edge, and the loop they close is lost
+(Figure~\ref{fig:toy-bad}, left). The \emph{MultiNerve Mapper} keeps one
+edge per piece~\cite[Sec.~3]{carriere2018structure}.
 
 \subsection{The Reeb graph and Mapper as its approximation}
 \label{sec:reeb}
@@ -46,65 +53,85 @@ $R_f(X)=X/{\sim_f}$, where $x\sim_f y$ if $f(x)=f(y)$ and $x,y$ lie in the
 same connected component of $f^{-1}(f(x))$.
 \end{definition}
 
-It is a graph when $f$ is of \emph{Morse type}, i.e.\ it has finitely many
-critical values and $X$ is a product over each interval between them
-(precise conditions in~\cite[Def.~2.1]{carriere2018structure}). Mapper
-uses intervals instead of level sets, so it is a \emph{pixelised} Reeb
-graph. Each feature of $R_f(X)$ (component, loop or branch) is a point
-$(x,y)$ of $\mathrm{Dg}(\tilde f)$, with $|y-x|$ its size. Mapper loses the
-features that fit inside an interval or an overlap. Below, $\mathcal{I}$ is
-a \emph{gomic} (generic, open, minimal interval
-cover~\cite[Sec.~2.5]{carriere2018structure}) and its granularity is its
-longest interval.
+It is a graph when $f$ is of \emph{Morse type}~\cite[Def.~2.1]{carriere2018structure}.
+Mapper uses intervals instead of level sets, so it is a \emph{pixelised}
+Reeb graph. Each feature of $R_f(X)$ (component, loop or branch) is a
+point $(x,y)$ of $\mathrm{Dg}(\tilde f)$ whose vertical distance to the
+diagonal, $|y-x|$, is its span in lens values. Below, $\mathcal{I}$ is a
+\emph{gomic} (generic, open, minimal interval cover; \emph{generic}: the
+part of an interval not covered by the others has no single-point
+component~\cite[Sec.~2.5]{carriere2018structure}), and its
+\emph{granularity} is the supremum of its interval lengths.
 
-\begin{theorem}[{\cite[Thm.~4.3, Cor.~4.6]{carriere2018structure}}]
+\paragraph{Staircases.} For an interval $I$ with endpoints $a\le b$, let
+$Q_I^-=\{(x,y):a\le y<x\le b\}$ (and $Q_I^+$ the analogous half-square
+above the diagonal). The cover defines one \emph{staircase} per type of
+point; for loops it is $Q^{\mathcal I}_{E^-}=\bigcup_{I\in\mathcal{I}}Q_I^-$.
+\emph{Theorem (structure):} for $f$ of Morse type and a gomic, the
+diagram of $\bar M_f$ is in bijection with $\mathrm{Dg}(\tilde f)$ minus
+the points lying in the staircase of their
+type~\cite[Thm.~4.3]{carriere2018structure}; the proof uses zigzag
+persistence and a Mayer--Vietoris half-pyramid. The ordinary Mapper also
+removes the loops in
+$Q^{\mathcal I}_E=\bigcup_{I\cap J\neq\emptyset}Q^-_{I\cup J}$~\cite[Sec.~4.3]{carriere2018structure}.
+A loop with lens values in $[m,M]$ is the point $(M,m)$, so it survives
+in $\bar M_f$ iff no interval contains $[m,M]$, and in $M_f$ iff no union
+of two intersecting intervals does.
+
+\begin{theorem}[{\cite[Cor.~4.6]{carriere2018structure}}]
 \label{thm:convergence}
 If $f$ is of Morse type and $\mathcal{I}$ is a gomic of $f(X)$ with
 granularity at most $\varepsilon$, then
-$\mathrm{Dg}(\tilde f)\setminus\{|y-x|\le\varepsilon\}\subseteq\mathrm{Dg}(\bar M_f(X,\mathcal{I}))\subseteq\mathrm{Dg}(\tilde f)$,
-so $d_B\bigl(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\tilde f)\bigr)\le\varepsilon/2$.
+$\mathrm{Dg}(\tilde f)\setminus\{|y-x|\le\varepsilon\}
+\subseteq\mathrm{Dg}(\bar M_f(X,\mathcal{I}))\subseteq\mathrm{Dg}(\tilde f)$,
+and $d_\Delta\bigl(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\tilde f)\bigr)\le\varepsilon/2$.
 \end{theorem}
 
-Features larger than the intervals survive, none are invented, and the
-MultiNerve Mapper converges to the Reeb graph as $\varepsilon\to0$. The
-ordinary Mapper can also lose loops that fit inside the union of two
-consecutive intervals~\cite[Sec.~4.3]{carriere2018structure}.
+Features of the Reeb graph whose vertical distance to the diagonal
+exceeds the cover granularity $\varepsilon$ are preserved by the
+MultiNerve Mapper, none is invented, and $\bar M_f$ converges to $R_f(X)$
+as $\varepsilon\to0$; the authors state that the convergence also holds
+for $M_f$. \emph{Heuristic:} ``features shorter than the intervals are
+lost'' is not the criterion. A short span is necessary to fall in a
+staircase, not sufficient: the feature is lost only if an interval (or,
+for $M_f$, a union of two) actually contains it.
 
 \subsection{Stability and parameter selection}
 
-\begin{theorem}[{\cite[Thm.~5.2]{carriere2018structure}}]
-For Morse-type $f,f'$ and a gomic $\mathcal{I}$,
-\[
-  d_{\mathcal{I}}\bigl(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\bar M_{f'})\bigr)\le\|f-f'\|_\infty,
-\]
-where $d_{\mathcal{I}}$ is the bottleneck distance with unmatched points
-charged their distance to the cover's staircases instead of the
-diagonal~\cite[Def.~5.1]{carriere2018structure}. The same holds for $M_f$.
+\begin{theorem}[{\cite[Def.~5.1, Thm.~5.2]{carriere2018structure}}]
+Let $d_{\mathcal{I}}$ be the bottleneck distance computed per type of
+point, with unmatched points charged their $\ell_\infty$ distance to the
+staircase of their type instead of to the diagonal. For Morse-type
+$f,f'$ and a gomic $\mathcal{I}$,
+$d_{\mathcal{I}}\bigl(\mathrm{Dg}(M_f),\mathrm{Dg}(M_{f'})\bigr)
+\le d_{\mathcal{I}}\bigl(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\bar M_{f'})\bigr)
+\le\|f-f'\|_\infty$.
 \end{theorem}
 
-A small change of the lens moves each feature little. Features close to
-disappearing are unstable.
+A small change of the lens moves each feature little relative to the
+staircases; with $d_\Delta$ the bound only holds up to an additive
+$\varepsilon/2$ ($\bar M_f$) or $\varepsilon$
+($M_f$)~\cite[Eqs.~(9)--(10)]{carriere2018structure}.
 
-\begin{theorem}[{\cite[Thm.~2.7]{carriere2018statistical}}]
+\begin{theorem}[{\cite[Thm.~7]{carriere2018statistical}}]
 \label{thm:cmo}
 Let $X\subset\mathbb{R}^D$ be a smooth compact submanifold with reach
 $\mathrm{rch}>0$ and convexity radius $\rho>0$, $X_n\subset X$ a finite
 sample, and $f$ of Morse type with modulus of continuity $\omega$. Let
-$M_{r,g,\delta}(X_n)$ use intervals of length $r$, gain $g\in(0,\frac12)$
-and clusters at scale $\delta$. If
+$M_{r,g,\delta}(X_n)$ use open intervals of length $r$, gain
+$0<g<\frac12$ and single linkage at scale $\delta$. If
 (1) $\delta\le\frac14\min\{\mathrm{rch},\rho\}$,
 (2) $V(\delta):=\max\{|f(x)-f(x')|:x,x'\in X_n,\|x-x'\|\le\delta\}<g\,r$ and
 (3) $4\,d_H(X,X_n)\le\delta$, then
-$d_B\bigl(\mathrm{Dg}(\tilde f),\mathrm{Dg}(M_{r,g,\delta}(X_n))\bigr)\le r+2\,\omega(\delta)$.
+$d_\Delta\bigl(\mathrm{Dg}(\tilde f),\mathrm{Dg}(M_{r,g,\delta}(X_n))\bigr)\le r+2\,\omega(\delta)$.
 \end{theorem}
 
-From it the authors derive a rule: $g\in(\frac13,\frac12)$, $\delta$ the
-Hausdorff distance from $X_n$ to a random subsample of $n/(\log n)^{1+\beta}$
-points, and $r$ slightly above $V(\delta)/g$. For i.i.d.\ samples under
-regularity assumptions on the distribution, this Mapper is minimax
-optimal up to log factors~\cite[Sec.~3]{carriere2018statistical}. Our
-embeddings are not known to satisfy these assumptions, so we use the rule
-as a default, not as a guarantee.
+The authors' rule takes $g\in(\frac13,\frac12)$, $\delta$ the Hausdorff
+distance from $X_n$ to a subsample of $n/(\log n)^{1+\beta}$ points, and
+$r$ slightly above $V(\delta)/g$~\cite[Eq.~(9)]{carriere2018statistical};
+under regularity assumptions it is minimax optimal up to a log
+factor~\cite[Props.~11--13]{carriere2018statistical}. Our embeddings are
+not known to satisfy them, so the rule is a default, not a guarantee.
 
 \subsection{Why a graph and not a clustering}
 
@@ -117,8 +144,9 @@ questions in those regions.
 \subsection{Worked example: a noisy circle}
 \label{sec:toy}
 
-We build the Mapper of a circle step by step (Figure~\ref{fig:toy}),
-following the code in \texttt{experiments/toy\_circle.py}.
+We build the Mapper of a circle (Figure~\ref{fig:toy}) with
+\texttt{experiments/toy\_circle.py}, keeping apart the theory for the
+continuous circle and the observed output on the sample.
 
 \begin{figure}[t]
   \centering
@@ -128,96 +156,90 @@ following the code in \texttt{experiments/toy\_circle.py}.
   \includegraphics[width=0.31\textwidth]{figures/toy/04_clusters.pdf}\hfill
   \includegraphics[width=0.31\textwidth]{figures/toy/05_nerve.pdf}\hfill
   \includegraphics[width=0.31\textwidth]{figures/toy/06_graph.pdf}
-  \caption{Mapper on a noisy circle, step by step. Top: the data, the
-  lens (height) and the cover of its range by 6 overlapping intervals.
-  Bottom: clusters in each band, the nerve (clusters that share points
-  are joined) and the final graph, with one loop.}
+  \caption{Mapper on a noisy circle (output of \texttt{toy\_circle.py}).
+  Top: data, lens (height), cover by 6 overlapping intervals. Bottom:
+  clusters per band, nerve, and the final graph with one loop.}
   \label{fig:toy}
 \end{figure}
 
-\paragraph{1. Data.} We sample 300 points on the unit circle and add
-Gaussian noise with $\sigma=0.06$, so the points lie at distance $0.82$ to
-$1.14$ from the centre. The space we want to recover has one component
-and one loop.
+\paragraph{Steps.} (1) \emph{Data:} 300 points on the unit circle with
+Gaussian noise $\sigma=0.06$ (seed 0). In the realized sample, the points
+lie at distances between $0.82$ and $1.14$ from the centre.
+(2) \emph{Lens:} the height $f(x,y)=y$, with sample range
+$[-1.07,1.08]$. On the continuous circle its Reeb graph is the circle,
+and the loop is the extended point $(1,-1)$, at vertical distance $2$.
+(3) \emph{Cover:} 6 open intervals of length $r=0.48$ with $g=30\%$
+(overlap $0.14$, starts $0.33$ apart). As $g<\frac12$, no three meet;
+restricted to $[-1,1]$ it is a gomic with $\varepsilon=0.48$.
+(4) \emph{Clustering:} single linkage at $\delta=0.25$ in each band.
+(5) \emph{Nerve:} clusters in consecutive bands are joined when they
+share points.
 
-\paragraph{2. Lens.} The lens is the height, $f(x,y)=y$. Its values range
-over $[-1.07,\,1.08]$. The Reeb graph of the height on the circle is the
-circle itself: every level set between the bottom and the top has two
-points, one on each side. It has one loop spanning the whole range of $f$.
+\paragraph{Observed.} The end bands give one cluster each and the four
+middle bands two (one per side): 10 nodes, 10 edges, hence
+$E-V+1=1$ loop. With $\delta=0.25$, $V(\delta)=0.25>g\,r=0.14$, so
+condition~(2) of Theorem~\ref{thm:cmo} fails and yet the graph is right:
+the theorem is sufficient, not necessary.
 
-\paragraph{3. Cover.} We cover the range with $6$ open intervals of length
-$r=0.48$ that overlap by $g=30\%$, i.e.\ consecutive intervals share
-$0.14$ and start $0.33$ apart. No three intervals meet, so the Mapper will
-be a graph.
-
-\paragraph{4. Clustering.} In each band we run single-linkage clustering
-with threshold $\delta=0.25$. The bottom and top bands hold one arc each
-and give one cluster. The four middle bands cut the circle twice and give
-two clusters, one per side. That makes $1+2+2+2+2+1=10$ clusters.
-
-\paragraph{5. Nerve.} Two clusters in consecutive bands are joined when
-they share points, which happens in the overlaps. Each side of the circle
-gives a chain, and the top and bottom clusters close the chains. The
-nerve has 10 nodes and 10 edges.
-
-\paragraph{6. Graph.} A connected graph with $V$ nodes and $E$ edges has
-$E-V+1$ independent loops, here $10-10+1=1$: the hole of the circle. The
-theory predicts this. In the continuous circle the refined cover is good,
-since its elements and their intersections are arcs, so by
-Theorem~\ref{thm:nerve} the nerve is a circle. The loop is also larger
-than the union of two consecutive intervals ($0.81$), so by
-Section~\ref{sec:reeb} it survives in the Mapper.
-
-\paragraph{Note on the hypotheses.} With $\delta=0.25$ the lens changes by
-up to $V(\delta)=0.25$ across one edge, which exceeds $g\,r=0.14$. So
-condition~(2) of Theorem~\ref{thm:cmo} fails, yet the graph is right. The
-theorem gives sufficient conditions, not necessary ones.
+\paragraph{Theory (continuous circle).} The refined cover is good (its
+elements and their non-empty intersections are arcs), so by
+Theorem~\ref{thm:nerve} the nerve is homotopy equivalent to $S^1$. In
+staircase terms, the loop's span $2$ exceeds $\varepsilon$, so it is in
+$\bar M_f$ (Theorem~\ref{thm:convergence}), and the longest union of two
+consecutive intervals ($0.81$) cannot contain $[-1,1]$, so it is in $M_f$
+too. The sample agrees with this, but the theorems do not guarantee it
+for the sample.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.48\textwidth]{figures/toy/07_bad_coarse.pdf}\hfill
   \includegraphics[width=0.48\textwidth]{figures/toy/08_bad_no_overlap.pdf}
-  \caption{Two covers that lose the loop. Left: two intervals; their
-  overlap has two pieces but the nerve draws one edge. Right: no overlap;
-  no cluster shares points and the graph has no edges.}
+  \caption{Two covers that lose the loop (output of
+  \texttt{toy\_circle.py}). Left: two intervals; their overlap has two
+  pieces but the nerve draws one edge. Right: no overlap, no edges.}
   \label{fig:toy-bad}
 \end{figure}
 
-\paragraph{Bad covers.} Figure~\ref{fig:toy-bad} keeps the data and the
-clustering and changes only the cover.
-\begin{itemize}
-  \item \emph{Too coarse: 2 intervals of length 1.26.} Each band holds one
-  arc, so there are two clusters. Their overlap, around $y=0$, has two
-  pieces, one on each side of the circle. The intersection is not
-  connected, so the cover is not good, and the nerve draws one edge. The
-  graph is a segment with no loop. This matches Section~\ref{sec:reeb}: the union of
-  the two intervals is the whole range, so the loop fits inside it and the
-  Mapper may lose it. Each interval, however, is shorter than the loop, so
-  by Theorem~\ref{thm:convergence} the MultiNerve Mapper, with one edge per
-  piece, keeps it.
-  \item \emph{No overlap: 6 intervals that only touch.} The same 10
-  clusters appear, but no two of them share a point, so the nerve has no
-  edges and the graph falls apart into 10 isolated nodes. The intervals no
-  longer form an open cover whose consecutive elements meet, so none of the
-  results above applies.
-\end{itemize}
-The lesson for our corpus is that the cover must be fine enough to
-separate the regions we care about, and the overlaps wide enough for
-neighbouring clusters to share points.
+\paragraph{Bad covers} (Figure~\ref{fig:toy-bad}, same data and clustering).
+\emph{Too coarse, 2 intervals of length 1.26.} Observed: 2 nodes, 1
+edge, no loop. Theory: the overlap has two pieces, so the cover is not
+good; the union of the two intervals contains $[-1,1]$, so the loop is in
+$Q^{\mathcal I}_E$ and $M_f$ loses it, while neither interval contains
+it, so $\bar M_f$ keeps it. \emph{No overlap.} Observed: the same 10
+clusters but no edges; the intervals do not form a cover whose
+consecutive elements meet, so no result applies. \emph{Heuristic:} the
+cover must be fine enough to separate the regions we care about, and the
+overlaps wide enough for neighbouring clusters to share points.
 
-\paragraph{From the circle to the corpus.} The SciFact graph follows the
-same steps with other choices: the lens is the first principal component
-of the chunk embeddings, the cover has 15 intervals with gain $g=\frac12$,
-and the clusters come from average linkage with cosine distance cut at
-$0.27$. Since $g=\frac12$, we keep only the Mapper graph. Single linkage
-suits the circle because empty space separates its arcs. Text embeddings
-have no such gaps: the median cosine distance from a chunk to its nearest
-neighbour is $0.14$, and between two random chunks $0.37$. With single
-linkage at $\delta=0.14$, 52\% of the chunks stay alone in one-chunk nodes;
-at $\delta=0.20$, chains of close pairs put 20\% of the corpus in one node.
-Average linkage merges two groups only when their mean distance is below
-the cut, so one close pair does not join two topics. The theorems above
-assume single-linkage clusters and a Morse-type lens on a manifold, so they
-do not hold for this graph as stated. They explain what the cover and the
-overlap control; we measure the stability of the selected regions in the
-experiments. The method section gives the details.
+\paragraph{From the circle to the corpus.} The SciFact graph uses the
+first principal component as lens, 15 intervals with $g=\frac12$, and
+average linkage with cosine distance cut at $0.27$. These choices were
+set on measurements (\#4), and the theorems above do not cover the
+resulting graph.
+
+\emph{Gain.} $g=\frac12$ roughly halves the number of components against
+$30\%$ (observed). It lies outside $0<g<\frac12$ (Theorem~\ref{thm:cmo})
+and $(\frac13,\frac12)$. In KeplerMapper~2.1.0 the intervals are closed,
+of length $r=0.098$, and start $r/2$ apart, so intervals $i$ and $i+2$
+share an endpoint: the cover is not minimal, hence not a gomic, and
+Theorem~\ref{thm:convergence} and the stability theorem do not apply.
+Triple intersections can occur at the 13 shared endpoints. Observed on
+SciFact: no chunk falls on one (the closest is $1.6\times10^{-6}$ away)
+and the nerve has no triangle; this is not guaranteed in general.
+
+\emph{Graph.} We use the ordinary Mapper graph as a practical choice:
+KeplerMapper builds it and the graph diff (\#5) compares nodes and edges.
+It does not follow from the theorems, and $M_f$ can lose loops that
+$\bar M_f$ keeps.
+
+\emph{Clustering.} Text embeddings have no empty space between topics
+(observed): the median cosine distance to the nearest neighbour is
+$0.14$, and $0.37$ between random chunks. Single linkage at $0.14$
+leaves 52\% of the chunks in one-chunk nodes; at $0.20$, chaining puts
+20\% of the corpus in one node. Average linkage merges two groups only
+when their mean distance is below the cut, so one close pair does not
+join two topics; but the theorems assume single linkage.
+
+The theorems therefore explain what the cover and the overlap control,
+not what our graph guarantees; the stability of the selected regions is
+measured in the experiments (\#8). The method section gives the details.
