@@ -133,7 +133,10 @@ class MapperParams:
         return self.offset + self.sign * ((x - self.center) @ self.axis)
 
 
-def fit_mapper(embeddings: np.ndarray, config: MapperConfig = MapperConfig()) -> MapperParams:
+_DEFAULT_CONFIG = MapperConfig()
+
+
+def fit_mapper(embeddings: np.ndarray, config: MapperConfig = _DEFAULT_CONFIG) -> MapperParams:
     """Fit the lens and the cover range on `embeddings` (the corpus before an ingestion)."""
     x = np.asarray(embeddings, dtype=np.float64)
     if x.ndim != 2 or x.shape[0] < 2:
@@ -227,7 +230,7 @@ def _to_mapper_graph(graph: dict, chunk_ids: Sequence[str]) -> MapperGraph:
 
 
 # Adapters with the signatures that `graph_diff.MapperSelector` takes as `fit` and `build`.
-def fit_corpus(corpus: Corpus, config: MapperConfig = MapperConfig()) -> MapperParams:
+def fit_corpus(corpus: Corpus, config: MapperConfig = _DEFAULT_CONFIG) -> MapperParams:
     return fit_mapper(corpus.embeddings, config)
 
 
