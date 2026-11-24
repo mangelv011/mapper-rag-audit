@@ -244,6 +244,14 @@ class Selector(Protocol):
 
 `select` returns at most `budget` distinct question ids from `questions`, ranked by priority (most likely broken first), so any prefix is the selection for a smaller budget. A selector never runs the failure check itself. `run_selector` calls a selector and checks that its output keeps this contract.
 
+## Graph diff selector
+
+`mapper_rag_audit.graph_diff` compares the Mapper graph before an ingestion with the graph after it (same Mapper parameters) and ranks the questions to re-run. `select_questions(graph_before, graph_after, new_chunk_ids, qrels, budget, rules)` returns question ids, at most `budget`. `diff_graphs` returns the matching, the affected and marked nodes and the new-chunk count per node. The module docstring states the matching and ranking rules. Each rule (`new_chunks`, `new_edge`, `split`, `merge`, `neighbours`) has a flag in `Rules`, all on by default.
+
+`MapperSelector(fit, build, rules, name)` adapts this to the shared selector interface (`name` and `select(before, after, questions, budget)`). `fit(before)` learns the Mapper parameters and `build(corpus, params)` makes a graph; the selector calls `build` on both corpora with the same parameters. A chunk is new if its id is missing from the corpus before or its text changed. The questions come from `questions` and their correct chunks from the qrels of the corpus before. The after corpus must start with the original chunk ids in order. The selector raises `ValueError` if that prefix is missing.
+
+Use `MapperSelector(fit_corpus, build_corpus_graph)` with the corpus adapters from `mapper_rag_audit.mapper`.
+
 ## License
 
 [MIT](LICENSE)
