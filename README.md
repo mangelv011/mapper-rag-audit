@@ -252,6 +252,24 @@ class Selector(Protocol):
 
 Use `MapperSelector(fit_corpus, build_corpus_graph)` with the corpus adapters from `mapper_rag_audit.mapper`.
 
+## Stability study
+
+`experiments/stability.py` measures how much the questions the Mapper selector picks depend on the Mapper parameters (#8). It varies the lens (`pca`, `centroid`), the number of intervals (10, 15, 20) and the overlap (0.3, 0.5, 0.7), runs the selector on 30 ingestions (3 trap types, seeds 0 to 9, 20 chunks each), and compares each setting with the default on the same ingestion. The measures are in `mapper_rag_audit.stability`:
+
+- detection rate, the #7 metric: broken questions inside the selection, pooled over the ingestions;
+- target rate: the questions the traps were written against inside the selection, pooled the same way. It is a denser signal, because the 30 ingestions break only 14 questions;
+- Jaccard of the selection with the default's selection at the same budget;
+- region Jaccard: the same on the whole candidate sets, independent of the budget.
+
+```bash
+python experiments/stability.py               # about 20 minutes on 9 processes
+python experiments/stability.py --plot-only   # redraw the tables and the figure from the CSV
+```
+
+The ingestions it uses are those of `make_ingestions.py` in `data/ingestions/`; any that are missing are generated first. It writes `results/stability/` (`runs.csv`, `summary.csv`, `table.md`, `heatmap.png`), plus `report/figures/stability_heatmap.pdf` and `report/figures/stability_table.tex` for the report. The interpretation is in `report/chapters/stability.tex`.
+
+The detected and target counts barely change across the 18 settings: at a budget of 10% of the questions, every setting selects 34–47% of the targets, against 10% for a random selection. Which questions are selected changes more. The candidate sets share 49–71% of their questions with the default's, and the 30 selected questions 29–49%.
+
 ## License
 
 [MIT](LICENSE)
