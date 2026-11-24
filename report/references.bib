@@ -1,22 +1,152 @@
-@article{singh2007topological,
-  title   = {Topological methods for the analysis of high dimensional data sets and 3D object recognition},
-  author  = {Singh, Gurjeet and M{\'e}moli, Facundo and Carlsson, Gunnar},
-  journal = {Eurographics Symposium on Point-Based Graphics},
-  year    = {2007}
+% Every entry below was checked against the paper itself or its publisher /
+% arXiv / Crossref record (issue #11). Do not add an entry from a search
+% snippet: open the paper first.
+
+% ---------------------------------------------------------------------------
+% Mapper and topological data analysis
+% ---------------------------------------------------------------------------
+
+@inproceedings{singh2007topological,
+  title     = {Topological Methods for the Analysis of High Dimensional Data Sets and {3D} Object Recognition},
+  author    = {Singh, Gurjeet and M{\'e}moli, Facundo and Carlsson, Gunnar},
+  booktitle = {Eurographics Symposium on Point-Based Graphics},
+  editor    = {Botsch, Mario and Pajarola, Renato},
+  pages     = {91--100},
+  publisher = {The Eurographics Association},
+  year      = {2007},
+  doi       = {10.2312/SPBG/SPBG07/091-100}
 }
+
+@article{rathore2023topobert,
+  title   = {{TopoBERT}: Exploring the Topology of Fine-Tuned Word Representations},
+  author  = {Rathore, Archit and Zhou, Yichu and Srikumar, Vivek and Wang, Bei},
+  journal = {Information Visualization},
+  volume  = {22},
+  number  = {3},
+  pages   = {186--208},
+  year    = {2023},
+  doi     = {10.1177/14738716231168671}
+}
+
+% Mapper libraries (#4 picks one of the two)
+
+@article{vanveen2019kepler,
+  title   = {Kepler {Mapper}: A Flexible {Python} Implementation of the {Mapper} Algorithm},
+  author  = {van Veen, Hendrik Jacob and Saul, Nathaniel and Eargle, David and Mangham, Sam W.},
+  journal = {Journal of Open Source Software},
+  volume  = {4},
+  number  = {42},
+  pages   = {1315},
+  year    = {2019},
+  doi     = {10.21105/joss.01315},
+  url     = {https://github.com/scikit-tda/kepler-mapper}
+}
+
+@misc{simi2025tdamapper,
+  title     = {tda-mapper: A Python Implementation of the {Mapper} Algorithm for Topological Data Analysis},
+  author    = {Simi, Luca},
+  year      = {2025},
+  publisher = {Zenodo},
+  note      = {Software, version 0.12.0},
+  doi       = {10.5281/zenodo.10642381},
+  url       = {https://github.com/lucasimi/tda-mapper-python}
+}
+
+% ---------------------------------------------------------------------------
+% Retrieval-augmented generation and its robustness
+% ---------------------------------------------------------------------------
+
+@inproceedings{lewis2020rag,
+  title     = {Retrieval-Augmented Generation for Knowledge-Intensive {NLP} Tasks},
+  author    = {Lewis, Patrick and Perez, Ethan and Piktus, Aleksandra and Petroni, Fabio and Karpukhin, Vladimir and Goyal, Naman and K{\"u}ttler, Heinrich and Lewis, Mike and Yih, Wen-tau and Rockt{\"a}schel, Tim and Riedel, Sebastian and Kiela, Douwe},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2020},
+  url       = {https://arxiv.org/abs/2005.11401}
+}
+
+@inproceedings{karpukhin2020dpr,
+  title     = {Dense Passage Retrieval for Open-Domain Question Answering},
+  author    = {Karpukhin, Vladimir and O{\u{g}}uz, Barlas and Min, Sewon and Lewis, Patrick and Wu, Ledell and Edunov, Sergey and Chen, Danqi and Yih, Wen-tau},
+  booktitle = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2020},
+  url       = {https://arxiv.org/abs/2004.04906}
+}
+
+@inproceedings{zhong2023poisoning,
+  title     = {Poisoning Retrieval Corpora by Injecting Adversarial Passages},
+  author    = {Zhong, Zexuan and Huang, Ziqing and Wettig, Alexander and Chen, Danqi},
+  booktitle = {Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2023},
+  url       = {https://arxiv.org/abs/2310.19156}
+}
+
+@inproceedings{zou2025poisonedrag,
+  title     = {{PoisonedRAG}: Knowledge Corruption Attacks to Retrieval-Augmented Generation of Large Language Models},
+  author    = {Zou, Wei and Geng, Runpeng and Wang, Binghui and Jia, Jinyuan},
+  booktitle = {Proceedings of the 34th USENIX Security Symposium},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2402.07867}
+}
+
+% ---------------------------------------------------------------------------
+% Regression test selection and prioritisation
+% ---------------------------------------------------------------------------
+
+@article{rothermel1997safe,
+  title   = {A Safe, Efficient Regression Test Selection Technique},
+  author  = {Rothermel, Gregg and Harrold, Mary Jean},
+  journal = {ACM Transactions on Software Engineering and Methodology},
+  volume  = {6},
+  number  = {2},
+  pages   = {173--210},
+  year    = {1997},
+  doi     = {10.1145/248233.248262}
+}
+
+@article{yoo2012regression,
+  title   = {Regression Testing Minimization, Selection and Prioritization: A Survey},
+  author  = {Yoo, Shin and Harman, Mark},
+  journal = {Software Testing, Verification and Reliability},
+  volume  = {22},
+  number  = {2},
+  pages   = {67--120},
+  year    = {2012},
+  doi     = {10.1002/stvr.430}
+}
+
+% ---------------------------------------------------------------------------
+% Data and models used in the experiments
+% ---------------------------------------------------------------------------
 
 @inproceedings{wadden2020scifact,
   title     = {Fact or Fiction: Verifying Scientific Claims},
   author    = {Wadden, David and Lin, Shanchuan and Lo, Kyle and Wang, Lucy Lu and van Zuylen, Madeleine and Cohan, Arman and Hajishirzi, Hannaneh},
-  booktitle = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing},
+  booktitle = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
   pages     = {7534--7550},
   year      = {2020},
-  note      = {\url{https://aclanthology.org/2020.emnlp-main.609/}}
+  doi       = {10.18653/v1/2020.emnlp-main.609},
+  url       = {https://github.com/allenai/scifact},
+  note      = {Licence: claims CC BY 4.0; abstracts ODC-By 1.0, taken from S2ORC
+               (Lo et al., ACL 2020, doi:10.18653/v1/2020.acl-main.447)}
 }
 
-@misc{thakur2021beir,
-  title  = {{BEIR}: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models},
-  author = {Thakur, Nandan and Reimers, Nils and R{\"u}ckl{\'e}, Andreas and Srivastava, Abhishek and Gurevych, Iryna},
-  year   = {2021},
-  note   = {\url{https://arxiv.org/abs/2104.08663}}
+@inproceedings{thakur2021beir,
+  title     = {{BEIR}: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models},
+  author    = {Thakur, Nandan and Reimers, Nils and R{\"u}ckl{\'e}, Andreas and Srivastava, Abhishek and Gurevych, Iryna},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track},
+  year      = {2021},
+  url       = {https://github.com/beir-cellar/beir}
 }
+
+@inproceedings{xiao2024cpack,
+  title     = {{C-Pack}: Packed Resources For General {Chinese} Embeddings},
+  author    = {Xiao, Shitao and Liu, Zheng and Zhang, Peitian and Muennighoff, Niklas and Lian, Defu and Nie, Jian-Yun},
+  booktitle = {Proceedings of the 47th International ACM SIGIR Conference on Research and Development in Information Retrieval},
+  pages     = {641--649},
+  year      = {2024},
+  doi       = {10.1145/3626772.3657878},
+  url       = {https://huggingface.co/BAAI/bge-small-en-v1.5},
+  note      = {Model used: BAAI/bge-small-en-v1.5, revision
+               5c38ec7c405ec4b44b94cc5a9bb96e735b38267a, MIT licence}
+}
+

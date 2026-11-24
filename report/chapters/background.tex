@@ -1,1 +1,38 @@
 \section{Background}
+\label{sec:background}
+
+\paragraph{Chunks and embeddings.}
+Documents are cut into \emph{chunks}; here a chunk is an abstract's title
+plus whole sentences, at most 512 tokens. An embedding model maps each
+chunk and question to a vector so that similar texts are close. Dense
+retrievers rank passages by the inner product of these
+vectors~\cite{karpukhin2020dpr}. We use
+\texttt{bge-small-en-v1.5}~\cite{xiao2024cpack} (384 dimensions) with unit
+vectors, so the similarity is $s(q,c) = \langle e(q), e(c) \rangle$.
+
+\paragraph{Top-$k$ retrieval.}
+The retriever returns the $k$ chunks of corpus $C$ with the highest $s(q,c)$,
+written $\mathrm{top}_k(q,C)$. A question with correct chunks $R(q)$
+\emph{fails} when $R(q) \cap \mathrm{top}_k(q,C) = \emptyset$. We use $k=5$.
+
+\paragraph{How an ingestion breaks a question.}
+An ingestion appends chunks $N$ to the corpus. Ties in $s$ are broken by
+corpus order, so older chunks rank first. Let $m(q) = \max_{r \in R(q)} s(q,r)$,
+and let $\rho(q)$ be the rank, counting from 1, of the first correct chunk when
+all of $C$ is ranked; the question passes when $\rho(q) \le k$. It fails
+afterwards exactly when
+\[
+  \bigl|\{ n \in N : s(q,n) > m(q) \}\bigr| \;\ge\; k - \rho(q) + 1 ,
+\]
+since a new chunk tied with $m(q)$ ranks after the correct chunk. The correct
+chunk is not deleted but
+\emph{displaced} by new chunks closer to the question. Since
+$\|e(q)-e(n)\|^2 = 2 - 2\,s(q,n)$ for unit vectors, only questions near the
+new chunks in the embedding space can break.
+
+\paragraph{Distractors.}
+Chunks that look relevant but do not answer the question are
+\emph{distractors}. A few optimised passages are retrieved for many unseen
+questions~\cite{zhong2023poisoning}, and five injected texts per question
+can control the answer of a RAG system~\cite{zou2025poisonedrag}. We study
+only displacement, which can be measured without a language model.

@@ -132,7 +132,9 @@ class Ingestion:
     after: Corpus
 
 
-def mutate_near_copy(text: str, rng: random.Random) -> tuple[str, dict[str, str]]:
+def mutate_near_copy(
+    text: str, rng: random.Random | None = None
+) -> tuple[str, dict[str, str]]:
     """Mutate numbers, direction words, or entities in a chunk text to alter factual claims."""
     lines = text.split("\n", 1)
     title = lines[0]
@@ -336,7 +338,9 @@ def _pick_unrelated_chunk(
         if c.chunk_id not in exclude_chunk_ids and c.doc_id != target_chunk.doc_id
     ]
     if not valid_indices:
-        return target_chunk
+        raise ValueError(
+            f"No candidate chunks from another document to mix with chunk {target_chunk.chunk_id}"
+        )
 
     # If embeddings are present, pick from lowest cosine similarity
     if len(corpus.embeddings) == len(corpus.chunks) and target_chunk.chunk_id in chunk_ids:
@@ -392,13 +396,9 @@ def generate_traps(
     )
 
     if not passing_qids:
-        # Fallback to any questions with correct chunks
-        passing_qids = sorted(
-            [q for q in all_qids if corpus.qrels.get(q)]
+        raise ValueError(
+            f"No questions pass at top-{k} with valid qrels in the corpus (out of {len(all_qids)} questions)"
         )
-
-    if not passing_qids:
-        raise ValueError("Corpus has no questions with valid qrels")
 
     # Sample n target questions deterministically
     if n <= len(passing_qids):
@@ -455,6 +455,10 @@ def apply_ingestion(
     trap_embeddings: np.ndarray,
 ) -> Corpus:
     """Return a new Corpus with trap chunks and embeddings added to the existing ones."""
+    if len(trap_embeddings) != len(trap_chunks):
+        raise ValueError(
+            f"trap_embeddings count ({len(trap_embeddings)}) does not match trap_chunks count ({len(trap_chunks)})"
+        )
     chunks_to_add = [
         c.to_chunk() if isinstance(c, TrapChunk) else c for c in trap_chunks
     ]
