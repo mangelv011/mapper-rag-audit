@@ -235,3 +235,13 @@ def test_all_baselines_run_end_to_end_on_a_synthetic_trap_ingestion():
         assert len(selected) <= budget
         if selector.name != "random":
             assert broken & set(selected[:3]), f"{selector.name} missed every broken question"
+
+
+def test_a_larger_m_can_change_the_selection_for_the_same_budget():
+    # Example from the review of #24: a new neighbour of one new chunk can outrank the
+    # neighbour of another new chunk, so m changes the selection, not only its tail.
+    qrels = {"q10": ["o10#0"], "q20": ["o20#0"], "q180": ["o180#0"]}
+    before = corpus({"o10#0": 10, "o20#0": 20, "o180#0": 180}, qrels)
+    after = corpus({"o10#0": 10, "o20#0": 20, "o180#0": 180, "n0#0": 0, "n155#0": 155}, qrels)
+    assert NearestNeighboursSelector(m=1).select(before, after, list(qrels), 2) == ["q10", "q180"]
+    assert NearestNeighboursSelector(m=2).select(before, after, list(qrels), 2) == ["q10", "q20"]

@@ -125,8 +125,16 @@ class NearestNeighboursSelector:
       retrieval k of 5. A new chunk breaks a question by entering its top-5, which only
       happens if the new chunk is close to the question and so, usually, to its correct
       chunk. The question-to-chunk and chunk-to-chunk neighbourhoods are not the same, so
-      m keeps a margin above k. Because questions are ranked by similarity, a larger m only
-      adds candidates at the end of the ranking. It changes the result only for large budgets.
+      m keeps a margin above k.
+
+      Effect of changing m: a larger m never drops a candidate and never lowers a question's
+      score, but it can add candidates whose score is higher than that of questions already
+      selected. The new neighbour of one new chunk can be closer to it than the m-th
+      neighbour of another new chunk is to that one. So with a fixed budget a larger m can
+      push other questions out of the selection. Example: old chunks at 10, 20 and 180
+      degrees, new chunks at 0 and 155, budget 2. With m = 1 the selection is the questions
+      of 10 and 180 (cos 10, cos 25). With m = 2 the question of 20 (cos 20) displaces the
+      one of 180.
 
     Old chunks are the chunks of `after` that are not new. Similarity is cosine. A candidate
     question is selected if one of its correct chunks is among the m nearest old chunks of
