@@ -12,23 +12,23 @@ pipeline. Every value given in this section is the default in the code.
       box/.style={draw, rounded corners, align=center, font=\small,
                   minimum height=9mm, inner sep=3pt},
       data/.style={box, fill=gray!10},
-      step/.style={box, fill=blue!8},
+      proc/.style={box, fill=blue!8},
       arr/.style={-{Stealth[length=2mm]}},
     ]
     \node[data] (corpus) {SciFact\\abstracts};
-    \node[step, right=of corpus] (chunk) {chunk\\$\le$ 512 tokens};
-    \node[step, right=of chunk] (embed) {embed\\bge-small};
+    \node[proc, right=of corpus] (chunk) {chunk\\$\le$ 512 tokens};
+    \node[proc, right=of chunk] (embed) {embed\\bge-small};
     \node[data, right=of embed] (before) {corpus\\before $C$};
-    \node[step, below=of before] (traps) {ingestion\\(traps $N$)};
+    \node[proc, below=of before] (traps) {ingestion\\(traps $N$)};
     \node[data, below=of traps] (after) {corpus\\after $C \cup N$};
 
-    \node[step, left=14mm of traps] (selectors) {selector\\
+    \node[proc, left=14mm of traps] (selectors) {selector\\
       Mapper diff,\\ random, k-means,\\ nearest neighbours};
     \node[data, left=of selectors] (ranked) {ranked\\questions\\($\le$ budget)};
 
-    \node[step, below=of after] (truth) {top-$k$ retrieval,\\$k = 5$};
+    \node[proc, below=of after] (truth) {top-$k$ retrieval,\\$k = 5$};
     \node[data, left=14mm of truth] (broken) {broken\\questions};
-    \node[step, left=of broken] (metric) {detection\\rate};
+    \node[proc, left=of broken] (metric) {detection\\rate};
 
     \draw[arr] (corpus) -- (chunk);
     \draw[arr] (chunk) -- (embed);
@@ -191,15 +191,17 @@ rather than from simpler signals.
     correct chunk, the same key as Mapper, but without edges, neighbours,
     splits or merges. The number of clusters equals the number of Mapper
     nodes (1,761), so both methods split the corpus into the same number of
-    regions.
+    regions. This is a heuristic for a fair comparison, not a choice the
+    theory suggests.
   \item \emph{Nearest neighbours of new chunks} tests whether a direct local
     search is enough. For each new chunk it takes the $m = 10$ most similar
     old chunks and ranks the questions whose correct chunk is among them,
     by that similarity. A new chunk breaks a question by entering its
     top~5, which needs it to be close to the question and, usually, to its
     correct chunk. We set $m = 2k$ as a margin, because the neighbours of a
-    chunk are not exactly the neighbours of a question. A larger $m$ only
-    adds candidates at the end of the ranking.
+    chunk are not exactly the neighbours of a question. A larger $m$ never
+    drops a candidate, but it can add questions that rank above those already
+    selected, so for a fixed budget the selection depends on $m$.
 \end{itemize}
 Random always fills the budget. The other three selectors return only the
 questions their rule marks, so they can return fewer than $b$.
