@@ -53,9 +53,9 @@ $R_f(X)=X/{\sim_f}$, where $x\sim_f y$ if $f(x)=f(y)$ and $x,y$ lie in the
 same connected component of $f^{-1}(f(x))$.
 \end{definition}
 
-It is a graph when $f$ is of \emph{Morse type}~\cite[Def.~2.1]{carriere2018structure}.
+It is a multigraph when $f$ is of \emph{Morse type}~\cite[Def.~2.1]{carriere2018structure}.
 Mapper uses intervals instead of level sets, so it is a \emph{pixelised}
-Reeb graph. Each feature of $R_f(X)$ (component, loop or branch) is a
+Reeb graph. Each feature of $R_f(X)$ (trunk, upward or downward branch, or hole) is a
 point $(x,y)$ of $\mathrm{Dg}(\tilde f)$ whose vertical distance to the
 diagonal, $|y-x|$, is its span in lens values. Below, $\mathcal{I}$ is a
 \emph{gomic} (generic, open, minimal interval cover; \emph{generic}: the
@@ -64,16 +64,18 @@ component~\cite[Sec.~2.5]{carriere2018structure}), and its
 \emph{granularity} is the supremum of its interval lengths.
 
 \paragraph{Staircases.} For an interval $I$ with endpoints $a\le b$, let
-$Q_I^-=\{(x,y):a\le y<x\le b\}$ (and $Q_I^+$ the analogous half-square
-above the diagonal). The cover defines one \emph{staircase} per type of
-point; for loops it is $Q^{\mathcal I}_{E^-}=\bigcup_{I\in\mathcal{I}}Q_I^-$.
+$Q_I^+=\{(x,y):a\le x\le y\le b\}$, the half-square above the diagonal
+and including it, and $Q_I^-=\{(x,y):a\le y<x\le b\}$, the half-square
+strictly below it. The cover defines one \emph{staircase} per type of
+point; for holes it is $Q^{\mathcal I}_{E^-}=\bigcup_{I\in\mathcal{I}}Q_I^-$.
 \emph{Theorem (structure):} for $f$ of Morse type and a gomic, the
 diagram of $\bar M_f$ is in bijection with $\mathrm{Dg}(\tilde f)$ minus
 the points lying in the staircase of their
 type~\cite[Thm.~4.3]{carriere2018structure}; the proof uses zigzag
 persistence and a Mayer--Vietoris half-pyramid. The ordinary Mapper also
-removes the loops in
-$Q^{\mathcal I}_E=\bigcup_{I\cap J\neq\emptyset}Q^-_{I\cup J}$~\cite[Sec.~4.3]{carriere2018structure}.
+removes the holes in the \emph{extended staircase}
+$Q^{\mathcal I}_E=\bigcup_{I\cap J\neq\emptyset}Q^-_{I\cup J}$, which
+replaces $Q^{\mathcal I}_{E^-}$~\cite[Sec.~4.3, Eq.~(6)]{carriere2018structure}.
 A loop with lens values in $[m,M]$ is the point $(M,m)$, so it survives
 in $\bar M_f$ iff no interval contains $[m,M]$, and in $M_f$ iff no union
 of two intersecting intervals does.
@@ -90,8 +92,9 @@ and $d_\Delta\bigl(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\tilde f)\bigr)\le\varepsil
 Features of the Reeb graph whose vertical distance to the diagonal
 exceeds the cover granularity $\varepsilon$ are preserved by the
 MultiNerve Mapper, none is invented, and $\bar M_f$ converges to $R_f(X)$
-as $\varepsilon\to0$; the authors state that the convergence also holds
-for $M_f$. \emph{Heuristic:} ``features shorter than the intervals are
+as $\varepsilon\to0$. The convergence of Corollary~4.6 also holds for
+$M_f$, with $Q^{\mathcal I}_E$ in place of
+$Q^{\mathcal I}_{E^-}$~\cite[Sec.~4.3, Cor.~4.6]{carriere2018structure}. \emph{Heuristic:} ``features shorter than the intervals are
 lost'' is not the criterion. A short span is necessary to fall in a
 staircase, not sufficient: the feature is lost only if an interval (or,
 for $M_f$, a union of two) actually contains it.
@@ -109,9 +112,11 @@ $d_{\mathcal{I}}\bigl(\mathrm{Dg}(M_f),\mathrm{Dg}(M_{f'})\bigr)
 \end{theorem}
 
 A small change of the lens moves each feature little relative to the
-staircases; with $d_\Delta$ the bound only holds up to an additive
-$\varepsilon/2$ ($\bar M_f$) or $\varepsilon$
-($M_f$)~\cite[Eqs.~(9)--(10)]{carriere2018structure}.
+staircases. For a gomic of granularity at most $\varepsilon$ the paper
+relates the two distances by
+$d_\Delta(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\bar M_{f'}))\le\frac{\varepsilon}{2}+d_{\mathcal I}(\mathrm{Dg}(\bar M_f),\mathrm{Dg}(\bar M_{f'}))$
+and
+$d_\Delta(\mathrm{Dg}(M_f),\mathrm{Dg}(M_{f'}))\le\varepsilon+d_{\mathcal I}(\mathrm{Dg}(M_f),\mathrm{Dg}(M_{f'}))$~\cite[Thm.~5.2, Eqs.~(9)--(10)]{carriere2018structure}.
 
 \begin{theorem}[{\cite[Thm.~7]{carriere2018statistical}}]
 \label{thm:cmo}
@@ -220,10 +225,11 @@ resulting graph.
 \emph{Gain.} $g=\frac12$ roughly halves the number of components against
 $30\%$ (observed). It lies outside $0<g<\frac12$ (Theorem~\ref{thm:cmo})
 and $(\frac13,\frac12)$. In KeplerMapper~2.1.0 the intervals are closed,
-of length $r=0.098$, and start $r/2$ apart, so intervals $i$ and $i+2$
-share an endpoint: the cover is not minimal, hence not a gomic, and
-Theorem~\ref{thm:convergence} and the stability theorem do not apply.
-Triple intersections can occur at the 13 shared endpoints. Observed on
+of length $r=0.098$, and start $r/2$ apart. Hence each interior interval
+is contained in the union of its two neighbours, so the cover is not
+minimal and not a gomic. Theorem~\ref{thm:convergence} and the stability
+theorem therefore do not apply. Intervals $i$ and $i+2$ share an
+endpoint, so triple intersections can occur at those 13 points. Observed on
 SciFact: no chunk falls on one (the closest is $1.6\times10^{-6}$ away)
 and the nerve has no triangle; this is not guaranteed in general.
 
