@@ -130,7 +130,7 @@ params = fit_mapper(embeddings_before, MapperConfig())        # lens and cover r
 graph = build_mapper_graph(embeddings, chunk_ids, params)     # MapperGraph(nodes, edges)
 ```
 
-Fitting and building are separate so that the graph after an ingestion reuses the lens and the cover fitted on the corpus before it. Refitting would shift every interval and reshuffle the whole graph. A new chunk whose lens value falls outside the fitted range goes to the end interval. `fit_corpus` and `build_corpus_graph` wrap the two steps for a `Corpus`, with the signatures `MapperSelector` (#5) takes. A node id is `i<interval>r<row>`: the interval and the first embedding row in the node, so a node that keeps its chunks keeps its id. Building is deterministic.
+Fitting and building are separate so that the graph after an ingestion reuses the lens and the cover fitted on the corpus before it. Refitting would shift every interval and reshuffle the whole graph. A new chunk whose lens value falls outside the fitted range goes to the end interval. `fit_corpus` and `build_corpus_graph` wrap the two steps for a `Corpus`, with the signatures `MapperSelector` (#5) takes. A node id is `i<interval>r<row>`: the interval and the first embedding row in the node, so a node that keeps its chunks keeps its id. The id names a set of chunks, not a region: a node that holds no new chunk can still change its chunks after an ingestion (see "The cost" below), and then its id can change too. `node_interval` reads the interval back from an id. Building is deterministic.
 
 **Library: [KeplerMapper](https://github.com/scikit-tda/kepler-mapper) 2.1.0.** Its cover takes fixed limits, which is what reusing the cover needs; it accepts a precomputed lens and any scikit-learn clusterer; and it writes the interactive HTML view. tda-mapper 0.12 requires `numpy<2`, which conflicts with the pinned numpy 2.4.6.
 
@@ -191,7 +191,7 @@ Each node is labelled with the three terms of highest mean TF-IDF over its chunk
 python experiments/build_mapper_graph.py
 ```
 
-It writes `data/mapper/graph.json` (settings, counts, and each node with its label and chunk ids) and `data/mapper/graph.html`. Open the HTML in a browser with internet access (it loads d3 from a CDN). Hover over a node: the browser tooltip shows its id and label, and the panel on the left (open it with `[+]` if it is closed) adds the chunk titles. The colour is the mean lens value. Other settings can be passed as options, for example `--threshold 0.3 --n-intervals 10`.
+It writes `data/mapper/graph.json` (settings, counts, and each node with its label and chunk ids) and `data/mapper/graph.html`. Open the HTML in a browser with internet access (it loads d3 from a CDN). Hover over a node: the browser tooltip shows its id and label, and the panel on the left (open it with `[+]` if it is closed) adds the chunk titles. The colour is the mean lens value. We checked the tooltip and the panel in Chrome; in Safari the tooltip may not show, so use Chrome or another Chromium browser. Other settings can be passed as options, for example `--threshold 0.3 --n-intervals 10`.
 
 ## Selectors
 

@@ -14,9 +14,16 @@ the whole graph, and the comparison of the two graphs (#5) would then see change
 A lens value outside the fitted range is clipped to it, so the point lands in an end interval.
 
 Node ids are `i<interval>r<row>`: the interval index, counting all intervals (empty ones
-included), and the first row of `embeddings` in the node. So a node with the same chunks in two
-graphs built from the same parameters has the same id, as long as the rows of the old chunks
-come first in the same order (new chunks appended at the end).
+included), and the first row of `embeddings` in the node. The interval is zero-padded to the
+same width for every id of a graph (at least two digits), so sorting the ids sorts by interval;
+`node_interval` reads it back. A node with the same chunks in two graphs built from the same
+parameters has the same id, as long as the rows of the old chunks come first in the same order
+(new chunks appended at the end).
+
+The id names a set of chunks, not a region of the graph. Average linkage re-runs on the whole
+interval after an ingestion, so a new chunk can change how nearby clusters merge: a node that
+holds no new chunk can still gain or lose chunks, and if it loses its first row its id changes
+too. On SciFact, 20 new chunks change about 20 such nodes (README, "The cost").
 """
 
 from __future__ import annotations
@@ -100,7 +107,7 @@ class _Clusterer(ClusterMixin, BaseEstimator):
         ).fit_predict(X)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class MapperParams:
     """What `fit_mapper` learned: the lens as an affine map, and the range of the cover.
 
@@ -109,6 +116,8 @@ class MapperParams:
     - centroid: center = 0, axis = c / |c| with c the mean embedding, sign = -1, offset = 1,
       which is 1 - cos(x, c) for unit-norm x.
     `low` and `high` are the range of the lens on the fitted embeddings.
+
+    Compared by identity (`eq=False`): the generated `==` would compare numpy arrays and raise.
     """
 
     config: MapperConfig
@@ -163,7 +172,7 @@ def interval_bounds(params: MapperParams) -> list[tuple[float, float]]:
 
 
 def _kmapper_graph(embeddings: np.ndarray, params: MapperParams) -> tuple[dict, np.ndarray]:
-    """Run KeplerMapper. Returns its graph dict, with stable node ids, and the clipped lens."""
+    """Run KeplerMapper. Returns its graph dict, with renamed node ids, and the clipped lens."""
     import kmapper as km
 
     cfg = params.config
@@ -181,14 +190,20 @@ def _kmapper_graph(embeddings: np.ndarray, params: MapperParams) -> tuple[dict, 
     # Name a cluster by its first row, not by the clusterer's label or a running count: those
     # depend on the merge tree and on the other clusters, so adding one point could rename
     # clusters it never touches. Clusters of one interval are disjoint, so the name is unique.
+    width = max(2, len(str(cfg.n_intervals - 1)))
     rename = {}
     for old, rows in graph["nodes"].items():
         cube = int(old.removeprefix("cube").split("_cluster")[0])
-        rename[old] = f"i{non_empty[cube]:02d}r{min(rows)}"
+        rename[old] = f"i{non_empty[cube]:0{width}d}r{min(rows)}"
     graph["nodes"] = {rename[k]: v for k, v in graph["nodes"].items()}
     graph["links"] = {rename[k]: [rename[t] for t in v] for k, v in graph["links"].items()}
     graph["simplices"] = [[rename[n] for n in s] for s in graph["simplices"]]
     return graph, lens[:, 0]
+
+
+def node_interval(node_id: str) -> int:
+    """The interval index of a node, read from its id `i<interval>r<row>`."""
+    return int(node_id[1:].split("r", 1)[0])
 
 
 def build_mapper_graph(

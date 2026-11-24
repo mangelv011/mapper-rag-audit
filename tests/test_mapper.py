@@ -14,6 +14,7 @@ from mapper_rag_audit.mapper import (
     fit_corpus,
     fit_mapper,
     interval_bounds,
+    node_interval,
     node_labels,
     save_html,
     summarize,
@@ -104,7 +105,7 @@ def test_node_ids_name_the_interval_the_chunks_fall_in():
     lens = dict(zip(ids(len(x)), params.lens(x)))
     used = set()
     for node, chunks in graph.nodes.items():
-        i = int(node[1:3])
+        i = node_interval(node)
         used.add(i)
         low, high = bounds[i]
         assert all(low <= lens[c] <= high for c in chunks), node
@@ -139,7 +140,7 @@ def test_a_point_beyond_the_fitted_range_goes_to_an_end_interval():
     assert not params.low <= value <= params.high, "the test point must lie off the range"
 
     after = build_mapper_graph(np.vstack([x, far]), ids(len(x)) + ["new"], params)
-    intervals = {int(n[1:3]) for n, c in after.nodes.items() if "new" in c}
+    intervals = {node_interval(n) for n, c in after.nodes.items() if "new" in c}
     assert intervals <= {0, CONFIG.n_intervals - 1}
 
 
@@ -283,3 +284,19 @@ def test_every_linkage_separates_the_blobs(linkage):
         MapperConfig(n_intervals=5, overlap=0.3, linkage=linkage, threshold=0.05),
     )
     assert len(connected_components(graph)) == 2
+
+
+def test_ids_sort_by_interval_with_a_hundred_intervals_or_more():
+    x = blobs(bridge=True)
+    graph = graph_of(x, MapperConfig(n_intervals=120, overlap=0.5, threshold=0.05))
+    nodes = sorted(graph.nodes)
+    assert all(len(n.split("r")[0]) == 4 for n in nodes), "i + three digits"
+    intervals = [node_interval(n) for n in nodes]
+    assert intervals == sorted(intervals) and max(intervals) >= 100
+
+
+def test_params_compare_by_identity_without_raising():
+    x = blobs(bridge=True)
+    params = fit_mapper(x, CONFIG)
+    assert params in [params] and len({params, params}) == 1  # == and hash, no ValueError
+    assert params != fit_mapper(x, CONFIG)
