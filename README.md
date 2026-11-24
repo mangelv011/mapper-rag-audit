@@ -121,6 +121,45 @@ These figures were measured on the corpus built in #1. They will change slightly
 python experiments/baseline_failures.py
 ```
 
+## SciFact trap ingestions
+
+Each ingestion starts from the original SciFact corpus and adds 20 synthetic chunks.
+All three runs target the same 20 questions that originally passed at k = 5.
+`near_copy` alters details in a relevant chunk, `contradiction` applies rules intended
+to reverse or negate a finding, and `mix` combines text from a relevant chunk and a
+chunk from a different document with low cosine similarity to it.
+
+Run these commands after `prepare_data.py`:
+
+```bash
+python experiments/make_ingestions.py --type near_copy --n 20 --seed 42 --k 5
+python experiments/make_ingestions.py --type contradiction --n 20 --seed 42 --k 5
+python experiments/make_ingestions.py --type mix --n 20 --seed 42 --k 5
+```
+
+Each run saves the synthetic chunks, their embeddings, the regression question IDs,
+and the run manifest under `data/ingestions/<type>_n20_s42/`.
+
+At k = 5, 66 of 300 questions failed before ingestion and 234 passed. We rechecked
+all 300 questions after each ingestion.
+
+| Trap type | Newly failing among the 20 targets | Newly failing among the 234 initial passes | Total failing after ingestion |
+|---|---:|---:|---:|
+| `near_copy` | 2/20 (10%) | 2/234 (0.85%) | 68/300 (22.67%) |
+| `contradiction` | 1/20 (5%) | 1/234 (0.43%) | 67/300 (22.33%) |
+| `mix` | 1/20 (5%) | 1/234 (0.43%) | 67/300 (22.33%) |
+
+All regressions involved targeted questions. Question `1049` failed after all three
+ingestions, and `1041` failed only after `near_copy`. These results describe one seed
+and one batch size. They measure top-k retrieval coverage.
+The [trap examples](report/trap_examples.md) summarize five generated chunks per type.
+
+The runs reused the prepared SciFact corpus and embedded the new chunks with
+the pinned BGE model revision. The reported regression numbers were measured
+on an Intel Mac CPU and reproduce identically under the pinned versions in
+`requirements.txt` (Python 3.11, PyTorch 2.15.0, sentence-transformers 6.3.0,
+transformers 5.23.0, tokenizers 0.23.3, and NumPy 2.4.6).
+
 ## Mapper graph
 
 The Mapper graph is the map of the corpus (`mapper_rag_audit.mapper`). The lens sends each chunk embedding to one number; the cover cuts the range of the lens into overlapping intervals; inside each interval the chunks are clustered, and each cluster is a node; two nodes share an edge when they share a chunk.
