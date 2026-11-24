@@ -7,42 +7,46 @@ pipeline. Every value given in this section is the default in the code.
 
 \begin{figure}[htbp]
   \centering
+  \resizebox{\linewidth}{!}{%
   \begin{tikzpicture}[
-      node distance=5mm and 7mm,
+      node distance=6mm and 6mm,
       box/.style={draw, rounded corners, align=center, font=\small,
-                  minimum height=9mm, inner sep=3pt},
+                  minimum height=10mm, minimum width=19mm, inner sep=3pt},
       data/.style={box, fill=gray!10},
       proc/.style={box, fill=blue!8},
       arr/.style={-{Stealth[length=2mm]}},
     ]
-    \node[data] (corpus) {SciFact\\abstracts};
-    \node[proc, right=of corpus] (chunk) {chunk\\$\le$ 512 tokens};
+    % Row 1: build the corpus, then ingest.
+    \node[data] (abstracts) {SciFact\\abstracts};
+    \node[proc, right=of abstracts] (chunk) {chunk\\$\le 512$ tokens};
     \node[proc, right=of chunk] (embed) {embed\\bge-small};
     \node[data, right=of embed] (before) {corpus\\before $C$};
-    \node[proc, below=of before] (traps) {ingestion\\(traps $N$)};
-    \node[data, below=of traps] (after) {corpus\\after $C \cup N$};
+    \node[proc, right=of before] (ingest) {ingestion\\traps $N$};
+    \node[data, right=of ingest] (after) {corpus after\\$C \cup N$};
+    % Row 2: the selector sees both corpora; the ground truth re-runs retrieval.
+    \node[proc, below=9mm of ingest, xshift=-12mm] (selector)
+      {selector: Mapper diff,\\random, k-means,\\nearest neighbours};
+    \node[proc, below=9mm of after, xshift=6mm] (retrieval)
+      {top-$k$ retrieval,\\$k = 5$, all questions};
+    % Row 3: compare.
+    \node[data, below=of selector] (ranked) {ranked questions\\($\le$ budget $b$)};
+    \node[data, below=of retrieval] (broken) {broken\\questions $B$};
+    \node[proc, below=6mm of $(ranked.south)!0.5!(broken.south)$] (metric)
+      {detection rate\\$|S_b \cap B| / |B|$};
 
-    \node[proc, left=14mm of traps] (selectors) {selector\\
-      Mapper diff,\\ random, k-means,\\ nearest neighbours};
-    \node[data, left=of selectors] (ranked) {ranked\\questions\\($\le$ budget)};
-
-    \node[proc, below=of after] (truth) {top-$k$ retrieval,\\$k = 5$};
-    \node[data, left=14mm of truth] (broken) {broken\\questions};
-    \node[proc, left=of broken] (metric) {detection\\rate};
-
-    \draw[arr] (corpus) -- (chunk);
+    \draw[arr] (abstracts) -- (chunk);
     \draw[arr] (chunk) -- (embed);
     \draw[arr] (embed) -- (before);
-    \draw[arr] (before) -- (traps);
-    \draw[arr] (traps) -- (after);
-    \draw[arr] (before.west) -| (selectors.north);
-    \draw[arr] (after.west) -| ([xshift=6mm]selectors.south);
-    \draw[arr] (selectors) -- (ranked);
-    \draw[arr] (after) -- (truth);
-    \draw[arr] (truth) -- (broken);
-    \draw[arr] (broken) -- (metric);
-    \draw[arr] (ranked) -- (metric);
-  \end{tikzpicture}
+    \draw[arr] (before) -- (ingest);
+    \draw[arr] (ingest) -- (after);
+    \draw[arr] (before.south) -- (selector.north -| before.south);
+    \draw[arr] (after.south) |- ([yshift=3mm]selector.north east) -- (selector.north east);
+    \draw[arr] (after.south -| retrieval.north) -- (retrieval.north);
+    \draw[arr] (selector) -- (ranked);
+    \draw[arr] (retrieval) -- (broken);
+    \draw[arr] (ranked.south) |- (metric.west);
+    \draw[arr] (broken.south) |- (metric.east);
+  \end{tikzpicture}}
   \caption{Pipeline. Selectors see the corpus before and after an ingestion,
   but never run the failure check. The ground truth comes from re-running
   retrieval on every question, and only the evaluation sees it.}
@@ -147,14 +151,8 @@ cover accepts fixed limits, which reusing the cover requires. It also takes
 a precomputed lens and any scikit-learn clusterer, and it writes an
 interactive HTML view of the graph. The version of tda-mapper we tried
 required \texttt{numpy<2}, which conflicts with the rest of the environment.
-We use average linkage rather than DBSCAN, the usual Mapper
-clusterer. Text embeddings have no empty space between topics: the median
-cosine distance from a chunk to its nearest neighbour is 0.14, and between
-two random chunks 0.37. DBSCAN with \texttt{min\_samples}~$=1$ is single
-linkage. With single linkage, either more than half the chunks sit in
-one-chunk nodes, or chains of neighbours merge unrelated topics into nodes
-of over 1,000 chunks. Average linkage at 0.27 leaves 2.4\% of the chunks
-alone, and its largest node holds 4\% of the corpus.
+Section~\ref{sec:mapper} explains why the clusterer is average
+linkage rather than DBSCAN.
 
 To compare the two graphs, each node $v$ after the ingestion is matched to
 the node $u$ before it that maximises the Jaccard index between $u$ and the
