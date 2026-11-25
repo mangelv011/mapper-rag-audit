@@ -59,192 +59,114 @@ pipeline. Every value given in this section is the default in the code.
 We use the SciFact test split~\cite{wadden2020scifact} in the BEIR
 format~\cite{thakur2021beir}: 5,183 abstracts and 300 questions with 339
 relevance judgments. A chunk is the title, a line break and a run of whole
-sentences of one abstract, never longer than the model's limit of 512 tokens,
-special tokens included. An abstract that fits stays one chunk; the 455 that
-do not are cut into the fewest chunks that fit, with sentences packed into
-chunks of roughly equal size. A sentence that is too long on its own is cut
-on token boundaries. Every chunk body is an exact slice of the original
-abstract. This gives 5,658 chunks. The correct chunks $R(q)$ of a question
-are all chunks of its relevant documents. All 300 questions have at least
-one correct chunk in the corpus.
+sentences of one abstract, never longer than the model's limit of 512 tokens.
+The 455 abstracts that do not fit are cut into the fewest chunks that fit,
+with sentences packed evenly. This gives 5,658 chunks. The correct chunks
+$R(q)$ of a question are all chunks of its relevant documents, and every
+question has at least one.
 
 Chunks and questions are embedded with
 \texttt{bge-small-en-v1.5}~\cite{xiao2024cpack} (pinned revision, 384
-dimensions, unit vectors); questions get the model's query instruction.
-Retrieval returns the $k = 5$ chunks with the highest cosine similarity,
-ties going to the chunk that comes first in the corpus. As in
+dimensions, unit vectors). Retrieval returns the $k = 5$ chunks with the
+highest cosine similarity, ties going to the earlier chunk. As in
 Section~\ref{sec:background}, a question \emph{fails} when
-$R(q) \cap \mathrm{top}_5(q, C) = \emptyset$. A question is \emph{broken} by
-an ingestion when it passes on $C$ and fails on $C \cup N$. On the original
-corpus 66 of the 300 questions (22.0\%) already fail; an ingestion cannot
-break them, so they are never counted as broken.
-
-We chose $k = 5$ because a RAG system passes a handful of chunks to the
-language model. With $k = 1$, 39\% of the questions already fail, which leaves
-few questions to break. With $k = 10$, a trap must push the correct chunk
-below ten others, so each trap breaks fewer questions.
+$R(q) \cap \mathrm{top}_5(q, C) = \emptyset$, and an ingestion \emph{breaks}
+it when it passes on $C$ and fails on $C \cup N$. On $C$, 66 of the 300
+questions (22\%) already fail and cannot be broken. We chose $k = 5$ because
+a RAG system passes a handful of chunks to the language model: with $k = 1$,
+39\% of the questions already fail, and with $k = 10$ a trap must outrank ten
+chunks, so few questions break.
 
 \subsection{Ingestions and ground truth}
 \label{sec:method-traps}
 
-An ingestion appends trap chunks $N$ to the corpus and leaves the old chunks
-and the relevance judgments unchanged. Each trap is built from a relevant
-chunk of a target question that passes on $C$. There are three types
-(Table~\ref{tab:trap-examples}): a \texttt{near\_copy} alters details, a
-\texttt{contradiction} reverses a finding with rule-based edits, and a
-\texttt{mix} joins part of a relevant chunk with part of an unrelated one.
-
-\begin{table}[htbp]
-  \centering
-  \small
-  \begin{tabular}{lp{0.72\linewidth}}
-    \hline
-    Type & Example (seed 42) \\
-    \hline
-    \texttt{near\_copy} & Abstract on the histone variant Htz1 (question
-      1041): ``less'', ``activated'' and ``promotes'' become ``more'',
-      ``inhibited'' and ``suppresses''. \\
-    \texttt{contradiction} & Abstract on maternal vitamin D (question 1370):
-      ``is associated with'' becomes ``is not associated with'' and
-      ``increased'' becomes ``decreased'' three times. \\
-    \texttt{mix} & IL2RA variation in type 1 diabetes (question 1029) joined
-      with an abstract on the R language for statistics. \\
-    \hline
-  \end{tabular}
-  \caption{One trap of each type. More examples are in
-  \texttt{report/trap\_examples.md}.}
-  \label{tab:trap-examples}
-\end{table}
-
-The ground truth of an ingestion is
-the set of broken questions, found by re-running retrieval on all 300
-questions. This is exactly the work a selector tries to avoid, so selectors
-never compute it.
+An ingestion appends trap chunks $N$ and leaves the old chunks and the
+relevance judgments unchanged. Each trap is built from a relevant chunk of a
+target question that passes on $C$, in one of three ways. A
+\texttt{near\_copy} alters details (on the histone variant Htz1,
+``activated'' becomes ``inhibited''). A \texttt{contradiction} reverses a
+finding with rule-based edits (``is associated with'' becomes ``is not
+associated with''). A \texttt{mix} joins part of a relevant chunk with part
+of an unrelated one (IL2RA in type 1 diabetes with the R language). More
+examples are in \texttt{report/trap\_examples.md}. The ground truth is the
+set of broken questions, found by re-running retrieval on all 300 questions,
+which is exactly the work a selector tries to avoid.
 
 \subsection{Selectors}
 \label{sec:method-selectors}
 
-A \emph{selector} receives the corpus before and after an ingestion, the
-candidate questions and a budget $b$. It returns at most $b$ distinct
-questions, ranked so that the most likely broken come first. Because the
-list is ranked, the selection for a smaller budget is a prefix of the
-selection for a larger one. All selectors share three conventions:
-\begin{itemize}
-  \item A chunk is \emph{new} if its id is not in $C$ or its text changed.
-  \item The candidates are the questions with at least one correct chunk.
-  \item Remaining ties are broken by question id, so every ranking is
-    deterministic.
-\end{itemize}
+A \emph{selector} receives both corpora, the candidate questions and a
+budget $b$, and returns at most $b$ distinct questions, most likely broken
+first. Because the list is ranked, a smaller budget selects a prefix of a
+larger one. A chunk is \emph{new} if its id is not in $C$ or its text
+changed; the candidates are the questions with a correct chunk; remaining
+ties are broken by question id.
 
 \paragraph{Mapper graph diff.}
 The Mapper graph (Section~\ref{sec:mapper}) is built with
-KeplerMapper~\cite{vanveen2019kepler}. The lens is the first principal
-component of the chunk embeddings. The cover has 15 intervals with 50\%
-overlap. Inside each interval, chunks are clustered by average linkage on
-cosine distance, cut at 0.27. Two nodes share an edge when they share a
-chunk. On SciFact the graph has 1,761 nodes and 2,225 edges. The lens and
-the cover are fitted once on $C$ and reused for $C \cup N$; refitting would
-move every interval and change the whole graph.
+KeplerMapper~\cite{vanveen2019kepler}: the lens is the first principal
+component of the embeddings, the cover has 15 intervals with 50\% overlap,
+and each interval is clustered by average linkage on cosine distance, cut
+at 0.27. On SciFact the graph has 1,761 nodes and 2,225 edges. The lens and
+the cover are fitted on $C$ and reused for $C \cup N$, since refitting would
+move every interval. We chose KeplerMapper over
+tda-mapper~\cite{simi2025tdamapper} because its cover accepts these fixed
+limits; the clusterer is discussed in Section~\ref{sec:mapper}.
 
-We chose KeplerMapper over tda-mapper~\cite{simi2025tdamapper} because its
-cover accepts fixed limits, which reusing the cover requires. It also takes
-a precomputed lens and any scikit-learn clusterer, and it writes an
-interactive HTML view of the graph. The version of tda-mapper we tried
-required \texttt{numpy<2}, which conflicts with the rest of the environment.
-Section~\ref{sec:mapper} explains why the clusterer is average
-linkage rather than DBSCAN.
-
-To compare the two graphs, each node $v$ after the ingestion is matched to
-the node $u$ before it that maximises the Jaccard index between $u$ and the
-old chunks of $v$. A node is \emph{affected} if one of four rules holds,
-each of which can be switched off:
-\begin{enumerate}
-  \item \emph{new chunks}: $v$ contains a new chunk;
-  \item \emph{new edge}: $v$ has an edge to a node $w$ such that the nodes
-    matched to $v$ and $w$ had no edge before;
-  \item \emph{split}: two or more nodes after are matched to the same node
-    before;
-  \item \emph{merge}: two or more nodes before have the same node after as
-    their match.
-\end{enumerate}
-The \emph{marked} nodes are the affected nodes and their neighbours in the
-graph after. A question is selected if one of its correct chunks lies in a
-marked node. Selected questions are ranked first by whether that node is
-affected or only a neighbour, then by the largest number of new chunks in
-the node, more first.
+Each node $v$ after the ingestion is matched to the node $u$ before it that
+maximises the Jaccard index with the old chunks of $v$. A node is
+\emph{affected} if (1) it contains a new chunk, (2) it has an edge whose
+matched nodes had none before, (3) it is one of several nodes matched to the
+same node before (a split), or (4) it is the match of several nodes before
+(a merge). Each rule can be switched off. The \emph{marked} nodes are the
+affected nodes and their neighbours. A question is selected if a correct
+chunk lies in a marked node, ranked first by whether that node is affected
+or only a neighbour, then by its number of new chunks.
 
 \paragraph{Baselines.}
-Three baselines show how much of Mapper's result comes from its graph
-rather than from simpler signals.
-\begin{itemize}
-  \item \emph{Random} shuffles the candidates with a fixed seed. It ignores
-    the ingestion, so it is the floor any method must beat. In expectation
-    it finds a fraction $b / 300$ of the broken questions.
-  \item \emph{k-means} tests whether the graph adds anything to a plain
-    partition. It fits k-means on the chunk embeddings of $C$ (scikit-learn,
-    10 restarts) and assigns the chunks of $C \cup N$ to the nearest
-    centroid. On unit vectors, Euclidean distance orders chunks the same way
-    as cosine similarity. Clusters that receive a new chunk are marked.
-    Questions are ranked by the number of new chunks in the cluster of their
-    correct chunk, the same key as Mapper, but without edges, neighbours,
-    splits or merges. The number of clusters equals the number of Mapper
-    nodes (1,761), so both methods split the corpus into the same number of
-    regions. This is a heuristic for a fair comparison, not a choice the
-    theory suggests.
-  \item \emph{Nearest neighbours of new chunks} tests whether a direct local
-    search is enough. For each new chunk it takes the $m = 10$ most similar
-    old chunks and ranks the questions whose correct chunk is among them,
-    by that similarity. A new chunk breaks a question by entering its
-    top~5, which needs it to be close to the question and, usually, to its
-    correct chunk. We set $m = 2k$ as a margin, because the neighbours of a
-    chunk are not exactly the neighbours of a question. A larger $m$ never
-    drops a candidate, but it can add questions that rank above those already
-    selected, so for a fixed budget the selection depends on $m$.
-\end{itemize}
-Random always fills the budget. The other three selectors return only the
-questions their rule marks, so they can return fewer than $b$.
+Three baselines show how much of the result comes from the graph.
+\emph{Random} shuffles the candidates with a fixed seed; in expectation it
+finds a fraction $b/300$ of the broken questions. \emph{k-means} fits
+scikit-learn k-means (10 restarts) on the embeddings of $C$, assigns the
+chunks of $C \cup N$ to the nearest centroid and ranks questions by the new
+chunks in the cluster of their correct chunk: Mapper's key without edges,
+neighbours, splits or merges. It uses as many clusters as Mapper has nodes,
+a heuristic for a fair comparison rather than a choice the theory suggests.
+\emph{Nearest neighbours} takes the $m = 10$ old chunks most similar to each
+new chunk and ranks the questions whose correct chunk is among them by that
+similarity. We set $m = 2k$ as a margin, because the neighbours of a chunk
+are not exactly those of a question. A larger $m$ never drops a candidate,
+but it can add some that rank higher, so the selection for a fixed budget
+depends on $m$. Random always fills the budget; the other selectors return
+only the questions their rule marks.
 
 \subsection{Evaluation}
 \label{sec:method-evaluation}
 
 For an ingestion with broken questions $B \neq \emptyset$ and a selection
-$S_b$ of budget $b$, the \emph{detection rate} is
-\[
-  \mathrm{DR}(b) = \frac{|S_b \cap B|}{|B|}.
-\]
-We use budgets of 5\%, 10\% and 20\% of the questions (15, 30 and 60), and
-every selector ranks all 300 questions.
+$S_b$, the \emph{detection rate} is
+$\mathrm{DR}(b) = |S_b \cap B| / |B|$. The budgets are 5\%, 10\% and 20\% of
+the questions (15, 30 and 60), and every selector ranks all 300.
 
-There are 30 ingestions: three trap types and seeds 0 to 9. Each seed samples
-20 target questions that pass on $C$ and writes one trap per target, so an
-ingestion adds 20 chunks. The three trap types of a seed share the same
-targets, which makes the types directly comparable. The k-means baseline is
-fitted with the seed of the ingestion.
+There are 30 ingestions: three trap types and seeds 0 to 9. Each seed
+samples 20 target questions that pass on $C$ and writes one trap per target.
+The three types of a seed share the targets, so they are directly
+comparable. k-means is fitted with the seed of the ingestion.
 
-Few traps push a correct chunk out of the top~5, so $B$ is small and often
-empty. $\mathrm{DR}(b)$ is undefined when $B = \emptyset$, and with one or two
-broken questions it can only be 0, 0.5 or 1. We therefore report, for each
-selector, trap type and budget:
-\begin{itemize}
-  \item the mean and sample standard deviation of $\mathrm{DR}(b)$ over the
-    ingestions with $B \neq \emptyset$, with their number;
-  \item the \emph{pooled} detection rate, $\sum |S_b \cap B| / \sum |B|$
-    over the ten seeds;
-  \item the \emph{target rate}, the fraction of the 20 targets in $S_b$. It
-    does not need broken questions, so it gives a denser signal of whether a
-    selector finds the region the traps went to;
-  \item the size of the tie block at the cut: the number of questions that
-    share the ranking key of the last selected one. A large block means the
-    question-id tie-break, not the method, decides part of the selection.
-\end{itemize}
-Mapper is also run with the \emph{new edge} rule and the neighbour expansion
-switched off, which leaves only the nodes with new chunks, splits and merges.
-This measures what the graph structure adds over the clusters.
+Few traps push a correct chunk out of the top~5, so $B$ is small or empty,
+and with one or two broken questions $\mathrm{DR}$ can only be 0, 0.5 or 1.
+For each selector, trap type and budget we therefore report the mean and
+standard deviation of $\mathrm{DR}$ over the ingestions with
+$B \neq \emptyset$, the \emph{pooled} rate $\sum |S_b \cap B| / \sum |B|$,
+and the \emph{target rate}, the fraction of the 20 targets in $S_b$, which
+gives a denser signal. We also report the \emph{tie block} at the cut, the
+number of questions sharing the key of the last one selected: when it is
+large, the question-id tie-break decides part of the selection. Mapper is
+also run without the new-edge rule and the neighbour expansion, to measure
+what the graph structure adds over its clusters.
 
-The stability study repeats the Mapper
-selector over 18 settings: a PCA or centroid lens, 10, 15 or 20 intervals,
-and an overlap of 0.3, 0.5 or 0.7, with the clustering cut fixed at 0.27. It
-compares each selection with the default's on the same ingestion.
-
-The main experiment takes 1,420\,s (24 minutes) for the 30 ingestions and
-five selectors, and the stability study about 17 minutes on 9 processes.
+The stability study repeats the Mapper selector over 18 settings (PCA or
+centroid lens; 10, 15 or 20 intervals; overlap 0.3, 0.5 or 0.7; cut fixed at
+0.27) and compares each selection with the default's. The main experiment
+takes 1,420\,s (24 minutes); the stability study about 17 minutes on
+9 processes.
