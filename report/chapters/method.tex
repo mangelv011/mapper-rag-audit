@@ -212,12 +212,39 @@ $S_b$ of budget $b$, the \emph{detection rate} is
 \[
   \mathrm{DR}(b) = \frac{|S_b \cap B|}{|B|}.
 \]
-We use budgets of 5\%, 10\% and 20\% of the questions (15, 30 and 60). Each
-configuration is repeated over
-\textbf{[TODO \#7: number of seeds]} seeds, each with a different sample of
-target questions and traps of \textbf{[TODO \#7: traps per ingestion]}
-chunks. We report the mean and standard deviation of $\mathrm{DR}$ across
-seeds. Mapper is also run with the \emph{new edge} rule switched off, to
-measure what the edges add.
-\textbf{[TODO \#7/\#8: parameter grid of the stability study and the runtime
-of the full run.]}
+We use budgets of 5\%, 10\% and 20\% of the questions (15, 30 and 60), and
+every selector ranks all 300 questions.
+
+There are 30 ingestions: three trap types and seeds 0 to 9. Each seed samples
+20 target questions that pass on $C$ and writes one trap per target, so an
+ingestion adds 20 chunks. The three trap types of a seed share the same
+targets, which makes the types directly comparable. The k-means baseline is
+fitted with the seed of the ingestion.
+
+Few traps push a correct chunk out of the top~5, so $B$ is small and often
+empty. $\mathrm{DR}(b)$ is undefined when $B = \emptyset$, and with one or two
+broken questions it can only be 0, 0.5 or 1. We therefore report, for each
+selector, trap type and budget:
+\begin{itemize}
+  \item the mean and sample standard deviation of $\mathrm{DR}(b)$ over the
+    ingestions with $B \neq \emptyset$, with their number;
+  \item the \emph{pooled} detection rate, $\sum |S_b \cap B| / \sum |B|$
+    over the ten seeds;
+  \item the \emph{target rate}, the fraction of the 20 targets in $S_b$. It
+    does not need broken questions, so it gives a denser signal of whether a
+    selector finds the region the traps went to;
+  \item the size of the tie block at the cut: the number of questions that
+    share the ranking key of the last selected one. A large block means the
+    question-id tie-break, not the method, decides part of the selection.
+\end{itemize}
+Mapper is also run with the \emph{new edge} rule and the neighbour expansion
+switched off, which leaves only the nodes with new chunks, splits and merges.
+This measures what the graph structure adds over the clusters.
+
+The stability study repeats the Mapper
+selector over 18 settings: a PCA or centroid lens, 10, 15 or 20 intervals,
+and an overlap of 0.3, 0.5 or 0.7, with the clustering cut fixed at 0.27. It
+compares each selection with the default's on the same ingestion.
+
+The main experiment takes 1,420\,s (24 minutes) for the 30 ingestions and
+five selectors, and the stability study about 17 minutes on 9 processes.
