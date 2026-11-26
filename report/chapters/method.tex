@@ -29,7 +29,7 @@ pipeline. Every value given in this section is the default in the code.
     \node[proc, below=9mm of after, xshift=6mm] (retrieval)
       {top-$k$ retrieval,\\$k = 5$, all questions};
     % Row 3: compare.
-    \node[data, below=of selector] (ranked) {ranked questions\\($\le$ budget $b$)};
+    \node[data, below=of selector] (ranked) {ranked questions $S_b$\\($\le$ budget $b$)};
     \node[data, below=of retrieval] (broken) {broken\\questions $B$};
     \node[proc, below=6mm of $(ranked.south)!0.5!(broken.south)$] (metric)
       {detection rate\\$|S_b \cap B| / |B|$};
@@ -104,14 +104,27 @@ ties are broken by question id.
 
 \paragraph{Mapper graph diff.}
 The Mapper graph (Section~\ref{sec:mapper}) is built with
-KeplerMapper~\cite{vanveen2019kepler}: the lens is the first principal
-component of the embeddings, the cover has 15 intervals with 50\% overlap,
-and each interval is clustered by average linkage on cosine distance, cut
-at 0.27. On SciFact the graph has 1,761 nodes and 2,225 edges. The lens and
-the cover are fitted on $C$ and reused for $C \cup N$, since refitting would
-move every interval. We chose KeplerMapper over
-tda-mapper~\cite{simi2025tdamapper} because its cover accepts these fixed
-limits; the clusterer is discussed in Section~\ref{sec:mapper}.
+KeplerMapper~\cite{vanveen2019kepler}. None of its four settings follows
+from the theory:
+\begin{itemize}
+  \item \emph{Lens}: the first principal component of the embeddings. A
+    practical choice: it is linear, so it applies unchanged to new chunks.
+  \item \emph{Intervals}: 15. Measured: in a simulated ingestion it changed
+    the fewest nodes that hold no new chunk (20, against 28 with 10
+    intervals and 41 with 20).
+  \item \emph{Overlap}: 50\%. Measured: against 30\%, it roughly halves the
+    number of connected components.
+  \item \emph{Clustering}: average linkage on cosine distance, cut at 0.27.
+    Measured: it leaves 2.4\% of the chunks alone in a node and no node
+    holds more than 4\% of the corpus.
+\end{itemize}
+The paragraph ``From the circle to the corpus'' in Section~\ref{sec:toy}
+explains why the theorems do not cover the resulting graph. On SciFact it
+has 1,761 nodes and 2,225 edges. The lens and the cover are fitted on $C$
+and reused for $C \cup N$, since refitting would move every interval. We
+chose KeplerMapper over tda-mapper~\cite{simi2025tdamapper} because its
+cover accepts these fixed limits, and because tda-mapper requires
+\texttt{numpy<2}, which conflicts with the rest of the environment.
 
 Each node $v$ after the ingestion is matched to the node $u$ before it that
 maximises the Jaccard index with the old chunks of $v$. A node is
@@ -146,7 +159,7 @@ only the questions their rule marks.
 For an ingestion with broken questions $B \neq \emptyset$ and a selection
 $S_b$, the \emph{detection rate} is
 $\mathrm{DR}(b) = |S_b \cap B| / |B|$. The budgets are 5\%, 10\% and 20\% of
-the questions (15, 30 and 60), and every selector ranks all 300.
+the questions (15, 30 and 60), and every selector receives all 300 questions as candidates.
 
 There are 30 ingestions: three trap types and seeds 0 to 9. Each seed
 samples 20 target questions that pass on $C$ and writes one trap per target.
