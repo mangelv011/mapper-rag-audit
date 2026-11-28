@@ -20,9 +20,10 @@ cut.
 \subsection{Robustness over 100 seeds}
 \label{sec:robustness}
 
-The ten seeds above give few break events, so we repeated the main experiment
+The ten seeds above give few break events. We repeated the main experiment
 with seeds 0 to 99, same corpus, selectors and budgets, on one machine. We
-fixed the decision rule before running: Mapper is worse than a baseline at a
+fixed the decision rule after seeing seeds 0 to 9 and before running seeds
+10 to 99: Mapper is worse than a baseline at a
 budget only if the 95\% bootstrap interval of the difference in pooled
 detection rate, resampling seeds, lies below zero.
 Table~\ref{tab:robustness} shows the counts and intervals. By this rule Mapper

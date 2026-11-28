@@ -293,7 +293,7 @@ Run every command from the repository root, inside the environment set up in [Ru
 
 `--plot-only` gives the committed numbers exactly. A full run on another machine can differ from them by a few counts: one of ours repeated its own results run after run, yet found one broken question fewer for Mapper on the `mix` traps at budget 60. We have not identified the cause.
 
-The runs behind the robustness table are in `results/robustness/`. To produce them again (about 3 hours on one laptop), in bash:
+The runs behind the robustness table are in `results/robustness/`. We ran seeds 0 to 99 in batches of 5 and merged the files, about 3 hours of computing on one laptop. The single command below does the same work, in bash; we have not run it in one go with 100 seeds:
 
 ```bash
 python experiments/main_experiment.py --seeds $(seq 0 99) --results-dir data/seeds_100 --figures-dir data/seeds_100
