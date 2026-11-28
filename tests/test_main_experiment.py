@@ -18,6 +18,7 @@ from mapper_rag_audit.chunking import Chunk
 from mapper_rag_audit.data import Corpus, Question
 from mapper_rag_audit.experiment import (
     ExperimentRun,
+    SummaryRow,
     _mean_std,
     export_runs_csv,
     export_summary_csv,
@@ -174,6 +175,10 @@ def test_csv_and_table_export_roundtrip(tmp_path: Path):
     assert "\\begin{table}" in tex_table
     assert "Mapper" in tex_table
     assert "tie-block size" in tex_table
+    # Trap type is a group row, not a column, so both tables fit the page width.
+    assert "\\multicolumn{3}{l}{\\texttt{near\\_copy}: 1 of 1 ingestions" in tex_table
+    assert "Mapper (all rules) & 50.0$\\pm$0.0 & 1/2 \\\\" in tex_table
+    assert "Mapper (all rules) & 10.0$\\pm$0.0 (1) \\\\" in tex_table
     assert "\\end{table}" in tex_table
 
 
@@ -278,3 +283,57 @@ def test_all_selectors_run_on_synthetic_corpus():
         if sel.name != "random":
             # q0 is target of the traps, so informed selectors should rank it first or second
             assert "q0" in ranked[:2]
+
+
+def _row(selector, trap, budget, broken, detected, mean, std, cuts, tie, tie_std):
+    with_broken = 5 if trap == "mix" else 3
+    return SummaryRow(
+        selector, trap, budget, 10, with_broken, broken, detected, detected / broken,
+        mean, std, 200, 0, 0.0, 0.0, cuts, tie, tie_std, 0.0, 0.0,
+    )
+
+
+def test_latex_tables_group_by_trap_and_order_columns_by_budget():
+    summary = [
+        _row("random", "near_copy", 30, 4, 0, 0.0, 0.0, 10, 1.0, 0.0),
+        _row("random", "near_copy", 15, 4, 0, 0.0, 0.0, 10, 1.0, 0.0),
+        _row("mapper", "mix", 30, 6, 2, 0.3, 0.4472, 0, 0.0, 0.0),
+        _row("mapper", "mix", 15, 6, 0, 0.0, 0.0, 10, 32.3, 8.0),
+        _row("random", "mix", 30, 6, 1, 0.1, 0.2, 10, 1.0, 0.0),
+        _row("random", "mix", 15, 6, 0, 0.0, 0.0, 10, 1.0, 0.0),
+        _row("mapper", "near_copy", 30, 4, 3, 0.6667, 0.5774, 10, 61.9, 11.0),
+        _row("mapper", "near_copy", 15, 4, 1, 0.3333, 0.5774, 10, 50.4, 24.5),
+    ]
+
+    lines = format_latex_table(summary).splitlines()
+
+    def group(columns, trap, with_broken):
+        return (
+            rf"    \multicolumn{{{columns}}}{{l}}{{\texttt{{{trap}}}: {with_broken} of 10 "
+            r"ingestions break a question} \\"
+        )
+
+    body = [line for line in lines if line.endswith(r"\\")]
+    assert body == [
+        r"    & \multicolumn{2}{c}{Mean $\pm$ SD (\%)} & \multicolumn{2}{c}{Pooled count} \\",
+        r"    Selector & 15 & 30 & 15 & 30 \\",
+        group(5, "mix", 5),
+        r"    Mapper (all rules) & 0.0$\pm$0.0 & 30.0$\pm$44.7 & 0/6 & 2/6 \\",
+        r"    Random & 0.0$\pm$0.0 & 10.0$\pm$20.0 & 0/6 & 1/6 \\",
+        group(5, r"near\_copy", 3),
+        r"    Mapper (all rules) & 33.3$\pm$57.7 & 66.7$\pm$57.7 & 1/4 & 3/4 \\",
+        r"    Random & 0.0$\pm$0.0 & 0.0$\pm$0.0 & 0/4 & 0/4 \\",
+        r"    Selector & Budget 15 & Budget 30 \\",
+        group(3, "mix", 5),
+        r"    Mapper (all rules) & 32.3$\pm$8.0 (10) & -- \\",
+        r"    Random & 1.0$\pm$0.0 (10) & 1.0$\pm$0.0 (10) \\",
+        group(3, r"near\_copy", 3),
+        r"    Mapper (all rules) & 50.4$\pm$24.5 (10) & 61.9$\pm$11.0 (10) \\",
+        r"    Random & 1.0$\pm$0.0 (10) & 1.0$\pm$0.0 (10) \\",
+    ]
+    assert r"  \begin{tabular}{lrrrr}" in lines
+    assert r"  \begin{tabular}{lrr}" in lines
+    assert [line for line in lines if r"\label" in line] == [
+        r"  \label{tab:main-results}",
+        r"  \label{tab:main-ties}",
+    ]

@@ -22,7 +22,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import csv
 import time
 from pathlib import Path
 
@@ -44,6 +43,7 @@ from mapper_rag_audit.experiment import (
     export_summary_csv,
     format_latex_table,
     format_markdown_table,
+    load_runs_csv,
     rank_selector_with_scores,
     score_ranking,
     summarize_runs,
@@ -171,21 +171,19 @@ def plot_detection_rate_vs_budget(
         "mix": "Mix traps",
     }
 
-    _, axes = plt.subplots(1, len(trap_types), figsize=(14, 4.5), sharey=True)
+    fig, axes = plt.subplots(1, len(trap_types), figsize=(7.5, 3.2), sharey=True)
     if len(trap_types) == 1:
         axes = [axes]
 
     # Index summary by (trap_type, selector, budget)
     summary_map = {(r.trap_type, r.selector, r.budget): r for r in summary}
 
-    budget_labels = [f"{b} ({b/300:.0%})" for b in budgets]
-
     for ax, trap_type in zip(axes, trap_types):
-        ax.set_title(trap_titles.get(trap_type, trap_type), fontsize=12, fontweight="bold")
-        ax.set_xlabel("Testing budget (questions / % corpus)", fontsize=10)
+        ax.set_title(trap_titles.get(trap_type, trap_type), fontsize=10, fontweight="bold")
+        ax.set_xlabel("Budget (questions)", fontsize=9)
         ax.grid(True, linestyle="--", alpha=0.5)
         ax.set_xticks(budgets)
-        ax.set_xticklabels(budget_labels, fontsize=9)
+        ax.set_xticklabels(budgets, fontsize=9)
         ax.set_ylim(-0.05, 1.05)
 
         for selector, style in styles.items():
@@ -216,7 +214,8 @@ def plot_detection_rate_vs_budget(
             )
 
     axes[0].set_ylabel("Detection rate (mean ± std)", fontsize=10)
-    axes[0].legend(loc="upper left", framealpha=0.9, fontsize=8.5)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=3, fontsize=8)
 
     plt.tight_layout()
     plt.savefig(out_pdf, bbox_inches="tight")
@@ -274,28 +273,7 @@ def main() -> None:
         if not runs_csv.exists():
             raise FileNotFoundError(f"Cannot --plot-only: {runs_csv} not found")
         print(f"Reading existing runs from {runs_csv}...")
-        runs = []
-        with runs_csv.open("r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                det = float(row["detection_rate"]) if row["detection_rate"] else float("nan")
-                runs.append(
-                    ExperimentRun(
-                        selector=row["selector"],
-                        trap_type=row["trap_type"],
-                        seed=int(row["seed"]),
-                        budget=int(row["budget"]),
-                        candidates=int(row["candidates"]),
-                        selected=int(row["selected"]),
-                        broken=int(row["broken"]),
-                        detected=int(row["detected"]),
-                        detection_rate=det,
-                        targets=int(row["targets"]),
-                        targets_hit=int(row["targets_hit"]),
-                        target_rate=float(row["target_rate"]),
-                        tie_block_size=int(row["tie_block_size"]),
-                    )
-                )
+        runs = load_runs_csv(runs_csv)
         summary = summarize_runs(runs)
         export_summary_csv(summary, summary_csv)
         table_md.write_text(format_markdown_table(summary), encoding="utf-8")

@@ -1,0 +1,29 @@
+\begin{table}[htbp]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lrrr}
+    \hline
+    Selector & Budget 15 & Budget 30 & Budget 60 \\
+    \hline
+    \multicolumn{4}{l}{Broken questions found out of all break events (\%)} \\
+    Mapper (all rules) & 52/232 (22.4) & 142/232 (61.2) & 195/232 (84.1) \\
+    Mapper (no edges or neighbours) & 52/232 (22.4) & 140/232 (60.3) & 188/232 (81.0) \\
+    Nearest neighbours & 171/232 (73.7) & 215/232 (92.7) & 216/232 (93.1) \\
+    k-means & 149/232 (64.2) & 212/232 (91.4) & 216/232 (93.1) \\
+    Random & 11/232 (4.7) & 22/232 (9.5) & 52/232 (22.4) \\
+    \hline
+    \multicolumn{4}{l}{Mapper (all rules) minus, in points [95\% interval]} \\
+    Nearest neighbours & $-51.3$ & $-31.5$ & $-9.1$ \\
+    & [$-61.9$, $-39.9$] & [$-39.3$, $-24.1$] & [$-13.6$, $-5.0$] \\
+    k-means & $-41.8$ & $-30.2$ & $-9.1$ \\
+    & [$-52.9$, $-30.6$] & [$-37.9$, $-22.7$] & [$-13.4$, $-5.2$] \\
+    Random & $+17.7$ & $+51.7$ & $+61.6$ \\
+    & [$+8.2$, $+27.4$] & [$+41.5$, $+61.2$] & [$+53.2$, $+69.3$] \\
+    No-edges variant (post hoc) & $+0.0$ & $+0.9$ & $+3.0$ \\
+    & [$+0.0$, $+0.0$] & [$+0.0$, $+2.2$] & [$+1.0$, $+5.3$] \\
+    \hline
+  \end{tabular}
+  \caption{100 seeds, 232 break events, 120 distinct (seed, question) cases and 10 distinct questions, the same for every selector and budget; the three most frequent questions account for 147 of the events. Intervals are percentile bootstrap over seeds (10,000 draws).}
+  \label{tab:robustness}
+\end{table}

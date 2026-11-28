@@ -22,9 +22,11 @@ Does Mapper detect regressions with fewer tests than traditional methods such as
 
 ## Outputs
 
-- **Report**: the underlying mathematical theory, the technique, the use case and its results, conclusions, and references (both information sources and data sources).
-- **Code** used to run the experiments, plus the datasets, or links to their sources when they are large.
-- **Short talk** (about 7 minutes): mathematical foundations, main ideas of the algorithm, experimental results and conclusions.
+- **Report (PDF)** covering the mathematical foundations, the technique, the use case and its results, the conclusions, and references for the literature and data sources.
+- **Code archive (ZIP)** containing the code used in the experiments and any datasets needed to run it. For large datasets, include links to the sources in the report.
+- **Seven-minute oral presentation** to the class covering the mathematical foundations, the main ideas of Mapper, the experimental results and the conclusions. The instructor asks questions afterward.
+
+The final grade is the average of the report and oral presentation scores. The instructor grades each out of 10.
 
 ## Team
 
@@ -267,6 +269,49 @@ Mapper is compared with three simpler selectors in `mapper_rag_audit.baselines`.
 | `NearestNeighboursSelector` | Takes the `m` nearest old chunks of each new chunk (cosine) and ranks questions whose correct chunk is among them, closest first. | `m` = 10, twice the retrieval k, as a margin. A larger `m` never drops a candidate, but it can add questions that rank above ones already selected, so with a fixed budget it can change the selection (example in the docstring). |
 
 Only Random always fills the budget. The other two return only the questions their rule marks, as Mapper does. A shorter list means the method found nothing else worth re-testing.
+
+## Reproduce the results
+
+Run every command from the repository root, inside the environment set up in [Run it](#run-it). `pip install -r requirements.txt` is the only installation step.
+
+**Without downloading SciFact:**
+
+| Result | Command | Output |
+|---|---|---|
+| Toy example on a circle (report figures) | `python experiments/toy_circle.py` | `report/figures/toy/` |
+| 100-seed robustness table, from the committed runs | `python experiments/robustness.py` | `report/figures/robustness_table.tex` |
+| Main table and figure, redrawn from the committed runs | `python experiments/main_experiment.py --plot-only` | `report/figures/main_experiment.pdf`, `report/figures/main_results_table.tex`, `results/main_experiment/` |
+
+**After `python experiments/prepare_data.py`:**
+
+| Result | Command | Output |
+|---|---|---|
+| Main experiment: 30 ingestions, five selectors, three budgets (24 to 30 minutes on the machines we tried) | `python experiments/main_experiment.py` | `results/main_experiment/` and the table and figure above |
+| Questions that already fail, for several k | `python experiments/baseline_failures.py` | printed |
+| Mapper settings table | `python experiments/mapper_settings.py` | printed |
+| Mapper graph of SciFact and its HTML view | `python experiments/build_mapper_graph.py` | `data/mapper/` |
+
+`--plot-only` gives the committed numbers exactly. A full run on another machine can differ from them by a few counts: one of ours repeated its own results run after run, yet found one broken question fewer for Mapper on the `mix` traps at budget 60. We have not identified the cause.
+
+The runs behind the robustness table are in `results/robustness/`. We ran seeds 0 to 99 in batches of 5 and merged the files, about 3 hours of computing on one laptop. The single command below does the same work, in bash; we have not run it in one go with 100 seeds:
+
+```bash
+python experiments/main_experiment.py --seeds $(seq 0 99) --results-dir data/seeds_100 --figures-dir data/seeds_100
+python experiments/robustness.py --runs data/seeds_100/runs.csv --from-data data
+```
+
+The second command overwrites `results/robustness/broken_questions.csv` and the report table; copy the new `runs.csv` to `results/robustness/` to keep the three consistent.
+
+The trap ingestions of one seed have their own commands in [SciFact trap ingestions](#scifact-trap-ingestions).
+
+**Report.** With a TeX distribution that provides `latexmk`:
+
+```bash
+cd report
+latexmk -pdf main.tex
+```
+
+The PDF is `report/main.pdf`.
 
 ## License
 
