@@ -77,7 +77,7 @@ def test_latex_table_reports_counts_intervals_and_question_concentration():
         for seed in (0, 1)
         for b in (15, 30)
     ]
-    events = [("mix", 0, "7"), ("mix", 0, "8"), ("mix", 1, "7"), ("mix", 1, "9")]
+    events = [("mix", 0, "7"), ("mix", 0, "8"), ("near_copy", 0, "7"), ("mix", 1, "7")]
 
     table = format_robustness_table(runs, events)
 
@@ -88,8 +88,8 @@ def test_latex_table_reports_counts_intervals_and_question_concentration():
     assert r"Random & $+50.0$ & $+50.0$ \\" in table
     assert r"& [$+0.0$, $+100.0$] & [$+0.0$, $+100.0$] \\" in table
     assert r"No-edges variant (post hoc) & $+0.0$ & $+0.0$ \\" in table
-    assert "2 seeds, 4 break events on 3 distinct questions" in table
-    assert "the three most frequent account for 4 of them" in table
+    assert "2 seeds, 4 break events, 3 distinct (seed, question) cases and 2 distinct questions" in table
+    assert "the three most frequent questions account for 4 of the events" in table
     assert r"\label{tab:robustness}" in table
 
 

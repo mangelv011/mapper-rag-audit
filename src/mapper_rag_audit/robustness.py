@@ -106,9 +106,11 @@ def format_robustness_table(
 
     questions = Counter(question for _, _, question in events)
     top = sum(count for _, count in questions.most_common(3))
+    cases = {(seed, question) for _, seed, question in events}
     caption = (
-        f"{len(seeds)} seeds, {len(events)} break events on {len(questions)} distinct "
-        f"questions; the three most frequent account for {top} of them. Intervals are "
+        f"{len(seeds)} seeds, {len(events)} break events, {len(cases)} distinct (seed, question) "
+        f"cases and {len(questions)} distinct questions, the same for every selector and budget; "
+        f"the three most frequent questions account for {top} of the events. Intervals are "
         f"percentile bootstrap over seeds ({DRAWS:,} draws)."
     )
     lines = [
