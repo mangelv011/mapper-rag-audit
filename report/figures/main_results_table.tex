@@ -1,59 +1,68 @@
 \begin{table}[htbp]
   \centering
-  \small
-  \begin{tabular}{llrrrr}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lrrrrrr}
     \hline
-    Trap type & Selector & Budget 15 & Budget 30 & Budget 60 & Pooled at max budget \\
+    & \multicolumn{3}{c}{Mean $\pm$ SD (\%)} & \multicolumn{3}{c}{Pooled count} \\
+    Selector & 15 & 30 & 60 & 15 & 30 & 60 \\
     \hline
-    \texttt{contradiction} & k-means & 33.3$\pm$57.7\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 4/4 (100.0\%) \\
-    \texttt{contradiction} & Mapper (all rules) & 33.3$\pm$57.7\% ($n=3/10$) & 66.7$\pm$57.7\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 4/4 (100.0\%) \\
-    \texttt{contradiction} & Mapper (no edges or neighbours) & 33.3$\pm$57.7\% ($n=3/10$) & 66.7$\pm$57.7\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 4/4 (100.0\%) \\
-    \texttt{contradiction} & Nearest neighbours & 100.0$\pm$0.0\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 4/4 (100.0\%) \\
-    \texttt{contradiction} & Random & 0.0$\pm$0.0\% ($n=3/10$) & 0.0$\pm$0.0\% ($n=3/10$) & 16.7$\pm$28.9\% ($n=3/10$) & 1/4 (25.0\%) \\
+    \multicolumn{7}{l}{\texttt{contradiction}: 3 of 10 ingestions break a question} \\
+    k-means & 33.3$\pm$57.7 & 100.0$\pm$0.0 & 100.0$\pm$0.0 & 2/4 & 4/4 & 4/4 \\
+    Mapper (all rules) & 33.3$\pm$57.7 & 66.7$\pm$57.7 & 100.0$\pm$0.0 & 1/4 & 3/4 & 4/4 \\
+    Mapper (no edges or neighbours) & 33.3$\pm$57.7 & 66.7$\pm$57.7 & 100.0$\pm$0.0 & 1/4 & 3/4 & 4/4 \\
+    Nearest neighbours & 100.0$\pm$0.0 & 100.0$\pm$0.0 & 100.0$\pm$0.0 & 4/4 & 4/4 & 4/4 \\
+    Random & 0.0$\pm$0.0 & 0.0$\pm$0.0 & 16.7$\pm$28.9 & 0/4 & 0/4 & 1/4 \\
     \hline
-    \texttt{mix} & k-means & 40.0$\pm$54.8\% ($n=5/10$) & 70.0$\pm$44.7\% ($n=5/10$) & 70.0$\pm$44.7\% ($n=5/10$) & 4/6 (66.7\%) \\
-    \texttt{mix} & Mapper (all rules) & 0.0$\pm$0.0\% ($n=5/10$) & 30.0$\pm$44.7\% ($n=5/10$) & 70.0$\pm$44.7\% ($n=5/10$) & 4/6 (66.7\%) \\
-    \texttt{mix} & Mapper (no edges or neighbours) & 0.0$\pm$0.0\% ($n=5/10$) & 30.0$\pm$44.7\% ($n=5/10$) & 30.0$\pm$44.7\% ($n=5/10$) & 2/6 (33.3\%) \\
-    \texttt{mix} & Nearest neighbours & 70.0$\pm$44.7\% ($n=5/10$) & 70.0$\pm$44.7\% ($n=5/10$) & 70.0$\pm$44.7\% ($n=5/10$) & 4/6 (66.7\%) \\
-    \texttt{mix} & Random & 0.0$\pm$0.0\% ($n=5/10$) & 0.0$\pm$0.0\% ($n=5/10$) & 0.0$\pm$0.0\% ($n=5/10$) & 0/6 (0.0\%) \\
+    \multicolumn{7}{l}{\texttt{mix}: 5 of 10 ingestions break a question} \\
+    k-means & 40.0$\pm$54.8 & 70.0$\pm$44.7 & 70.0$\pm$44.7 & 2/6 & 4/6 & 4/6 \\
+    Mapper (all rules) & 0.0$\pm$0.0 & 30.0$\pm$44.7 & 70.0$\pm$44.7 & 0/6 & 2/6 & 4/6 \\
+    Mapper (no edges or neighbours) & 0.0$\pm$0.0 & 30.0$\pm$44.7 & 30.0$\pm$44.7 & 0/6 & 2/6 & 2/6 \\
+    Nearest neighbours & 70.0$\pm$44.7 & 70.0$\pm$44.7 & 70.0$\pm$44.7 & 4/6 & 4/6 & 4/6 \\
+    Random & 0.0$\pm$0.0 & 0.0$\pm$0.0 & 0.0$\pm$0.0 & 0/6 & 0/6 & 0/6 \\
     \hline
-    \texttt{near\_copy} & k-means & 33.3$\pm$57.7\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 4/4 (100.0\%) \\
-    \texttt{near\_copy} & Mapper (all rules) & 33.3$\pm$57.7\% ($n=3/10$) & 66.7$\pm$57.7\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 4/4 (100.0\%) \\
-    \texttt{near\_copy} & Mapper (no edges or neighbours) & 33.3$\pm$57.7\% ($n=3/10$) & 66.7$\pm$57.7\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 4/4 (100.0\%) \\
-    \texttt{near\_copy} & Nearest neighbours & 66.7$\pm$57.7\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 100.0$\pm$0.0\% ($n=3/10$) & 4/4 (100.0\%) \\
-    \texttt{near\_copy} & Random & 0.0$\pm$0.0\% ($n=3/10$) & 0.0$\pm$0.0\% ($n=3/10$) & 16.7$\pm$28.9\% ($n=3/10$) & 1/4 (25.0\%) \\
+    \multicolumn{7}{l}{\texttt{near\_copy}: 3 of 10 ingestions break a question} \\
+    k-means & 33.3$\pm$57.7 & 100.0$\pm$0.0 & 100.0$\pm$0.0 & 2/4 & 4/4 & 4/4 \\
+    Mapper (all rules) & 33.3$\pm$57.7 & 66.7$\pm$57.7 & 100.0$\pm$0.0 & 1/4 & 3/4 & 4/4 \\
+    Mapper (no edges or neighbours) & 33.3$\pm$57.7 & 66.7$\pm$57.7 & 100.0$\pm$0.0 & 1/4 & 3/4 & 4/4 \\
+    Nearest neighbours & 66.7$\pm$57.7 & 100.0$\pm$0.0 & 100.0$\pm$0.0 & 3/4 & 4/4 & 4/4 \\
+    Random & 0.0$\pm$0.0 & 0.0$\pm$0.0 & 16.7$\pm$28.9 & 0/4 & 0/4 & 1/4 \\
     \hline
   \end{tabular}
-  \caption{Detection rate (mean $\pm$ sample SD over ingestions with regressions; $n$ gives those ingestions / total seeds). The final column is pooled at the largest budget.}
+  \caption{Detection rate at each budget (number of questions re-tested). Mean and sample SD are over the ingestions that break a question; the pooled count is broken questions found out of all broken questions.}
   \label{tab:main-results}
 \end{table}
 
 \begin{table}[htbp]
   \centering
-  \small
-  \begin{tabular}{llrrr}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lrrr}
     \hline
-    Trap type & Selector & Budget 15 & Budget 30 & Budget 60 \\
+    Selector & Budget 15 & Budget 30 & Budget 60 \\
     \hline
-    \texttt{contradiction} & k-means & 29.6$\pm$3.0 ($n=10$) & 34.0$\pm$4.2 ($n=2$) & -- \\
-    \texttt{contradiction} & Mapper (all rules) & 43.4$\pm$25.9 ($n=10$) & 61.9$\pm$10.4 ($n=10$) & 59.9$\pm$13.8 ($n=10$) \\
-    \texttt{contradiction} & Mapper (no edges or neighbours) & 43.4$\pm$25.9 ($n=10$) & 61.9$\pm$10.4 ($n=10$) & 63.0$\pm$10.4 ($n=9$) \\
-    \texttt{contradiction} & Nearest neighbours & 2.0$\pm$0.9 ($n=10$) & 1.3$\pm$0.5 ($n=10$) & -- \\
-    \texttt{contradiction} & Random & 1.0$\pm$0.0 ($n=10$) & 1.0$\pm$0.0 ($n=10$) & 1.0$\pm$0.0 ($n=10$) \\
+    \multicolumn{4}{l}{\texttt{contradiction}: 3 of 10 ingestions break a question} \\
+    k-means & 29.6$\pm$3.0 (10) & 34.0$\pm$4.2 (2) & -- \\
+    Mapper (all rules) & 43.4$\pm$25.9 (10) & 61.9$\pm$10.4 (10) & 59.9$\pm$13.8 (10) \\
+    Mapper (no edges or neighbours) & 43.4$\pm$25.9 (10) & 61.9$\pm$10.4 (10) & 63.0$\pm$10.4 (9) \\
+    Nearest neighbours & 2.0$\pm$0.9 (10) & 1.3$\pm$0.5 (10) & -- \\
+    Random & 1.0$\pm$0.0 (10) & 1.0$\pm$0.0 (10) & 1.0$\pm$0.0 (10) \\
     \hline
-    \texttt{mix} & k-means & 22.3$\pm$4.9 ($n=10$) & 34.0$\pm$0.0 ($n=1$) & -- \\
-    \texttt{mix} & Mapper (all rules) & 32.3$\pm$8.0 ($n=10$) & 34.8$\pm$4.5 ($n=10$) & 83.8$\pm$35.4 ($n=10$) \\
-    \texttt{mix} & Mapper (no edges or neighbours) & 32.3$\pm$8.0 ($n=10$) & 35.5$\pm$4.9 ($n=8$) & -- \\
-    \texttt{mix} & Nearest neighbours & 1.7$\pm$0.9 ($n=10$) & 1.6$\pm$1.0 ($n=9$) & -- \\
-    \texttt{mix} & Random & 1.0$\pm$0.0 ($n=10$) & 1.0$\pm$0.0 ($n=10$) & 1.0$\pm$0.0 ($n=10$) \\
+    \multicolumn{4}{l}{\texttt{mix}: 5 of 10 ingestions break a question} \\
+    k-means & 22.3$\pm$4.9 (10) & 34.0$\pm$0.0 (1) & -- \\
+    Mapper (all rules) & 32.3$\pm$8.0 (10) & 34.8$\pm$4.5 (10) & 83.8$\pm$35.4 (10) \\
+    Mapper (no edges or neighbours) & 32.3$\pm$8.0 (10) & 35.5$\pm$4.9 (8) & -- \\
+    Nearest neighbours & 1.7$\pm$0.9 (10) & 1.6$\pm$1.0 (9) & -- \\
+    Random & 1.0$\pm$0.0 (10) & 1.0$\pm$0.0 (10) & 1.0$\pm$0.0 (10) \\
     \hline
-    \texttt{near\_copy} & k-means & 29.6$\pm$3.0 ($n=10$) & 34.0$\pm$4.2 ($n=2$) & -- \\
-    \texttt{near\_copy} & Mapper (all rules) & 50.4$\pm$24.5 ($n=10$) & 61.9$\pm$11.0 ($n=10$) & 59.9$\pm$14.3 ($n=10$) \\
-    \texttt{near\_copy} & Mapper (no edges or neighbours) & 50.4$\pm$24.5 ($n=10$) & 61.9$\pm$11.0 ($n=10$) & 63.0$\pm$11.1 ($n=9$) \\
-    \texttt{near\_copy} & Nearest neighbours & 1.9$\pm$0.9 ($n=10$) & 1.3$\pm$0.5 ($n=9$) & -- \\
-    \texttt{near\_copy} & Random & 1.0$\pm$0.0 ($n=10$) & 1.0$\pm$0.0 ($n=10$) & 1.0$\pm$0.0 ($n=10$) \\
+    \multicolumn{4}{l}{\texttt{near\_copy}: 3 of 10 ingestions break a question} \\
+    k-means & 29.6$\pm$3.0 (10) & 34.0$\pm$4.2 (2) & -- \\
+    Mapper (all rules) & 50.4$\pm$24.5 (10) & 61.9$\pm$11.0 (10) & 59.9$\pm$14.3 (10) \\
+    Mapper (no edges or neighbours) & 50.4$\pm$24.5 (10) & 61.9$\pm$11.0 (10) & 63.0$\pm$11.1 (9) \\
+    Nearest neighbours & 1.9$\pm$0.9 (10) & 1.3$\pm$0.5 (9) & -- \\
+    Random & 1.0$\pm$0.0 (10) & 1.0$\pm$0.0 (10) & 1.0$\pm$0.0 (10) \\
     \hline
   \end{tabular}
-  \caption{Primary-score tie-block size at the cut (mean $\pm$ SD; $n$ is the number of cuts). \texttt{--} means the selector ranking ended at or before the budget. Ties are ordered by question ID.}
+  \caption{Primary-score tie-block size at the cut (mean $\pm$ SD, number of cuts in parentheses). \texttt{--} means the selector ranking ended at or before the budget. Ties are ordered by question ID.}
   \label{tab:main-ties}
 \end{table}

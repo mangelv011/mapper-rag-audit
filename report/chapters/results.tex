@@ -1,34 +1,18 @@
 \section{Results}
+\label{sec:results}
 
-\subsection{SciFact retrieval regressions}
+Table~\ref{tab:main-results} and Figure~\ref{fig:main-experiment} show the
+detection rate of each selector. Across the 10-seed main experiment, at the
+5\% budget Mapper re-tested 17.5--22.5\% of target questions, while k-means
+re-tested 50.5--51.0\% and nearest neighbours re-tested 52.5--55.0\%.
+Table~\ref{tab:main-ties} shows how many questions are tied at each budget
+cut.
 
-Before ingestion, 66 of the 300 questions failed at $k=5$ (22.0\%).
-Table~\ref{tab:scifact-trap-regressions} shows the regressions among the 20
-targeted questions and among all 234 questions that initially passed. The
-last column includes the 66 failures already present in the original corpus.
+\input{figures/main_results_table}
 
-\begin{table}[htbp]
+\begin{figure}[htbp]
   \centering
-  \begin{tabular}{lrrr}
-    \hline
-    Trap type & Targeted & Initially passing & All failures after \\
-    \hline
-    \texttt{near\_copy}     & 2/20 (10\%) & 2/234 (0.85\%) & 68/300 (22.67\%) \\
-    \texttt{contradiction} & 1/20 (5\%)  & 1/234 (0.43\%) & 67/300 (22.33\%) \\
-    \texttt{mix}           & 1/20 (5\%)  & 1/234 (0.43\%) & 67/300 (22.33\%) \\
-    \hline
-  \end{tabular}
-  \caption{New retrieval failures in the two cohorts and total failures after
-  each independent SciFact ingestion.}
-  \label{tab:scifact-trap-regressions}
-\end{table}
-
-Every regression occurred among the targeted questions. Question 1049
-regressed in all three runs, and question 1041 regressed only in the
-\texttt{near\_copy} run. These results measure retrieval coverage for one
-seed and one ingestion size. Comparing how efficiently each selector
-finds these regressions requires a separate experiment.
-
-Across the 10-seed main experiment, at the 5\% budget Mapper re-tested
-17.5--22.5\% of target questions, while k-means re-tested 50.5--51.0\%
-and nearest neighbours re-tested 52.5--55.0\%.
+  \includegraphics[width=\linewidth]{figures/main_experiment.pdf}
+  \caption{Detection rate against budget for each trap type.}
+  \label{fig:main-experiment}
+\end{figure}

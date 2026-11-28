@@ -171,21 +171,19 @@ def plot_detection_rate_vs_budget(
         "mix": "Mix traps",
     }
 
-    _, axes = plt.subplots(1, len(trap_types), figsize=(14, 4.5), sharey=True)
+    fig, axes = plt.subplots(1, len(trap_types), figsize=(7.5, 3.2), sharey=True)
     if len(trap_types) == 1:
         axes = [axes]
 
     # Index summary by (trap_type, selector, budget)
     summary_map = {(r.trap_type, r.selector, r.budget): r for r in summary}
 
-    budget_labels = [f"{b} ({b/300:.0%})" for b in budgets]
-
     for ax, trap_type in zip(axes, trap_types):
-        ax.set_title(trap_titles.get(trap_type, trap_type), fontsize=12, fontweight="bold")
-        ax.set_xlabel("Testing budget (questions / % corpus)", fontsize=10)
+        ax.set_title(trap_titles.get(trap_type, trap_type), fontsize=10, fontweight="bold")
+        ax.set_xlabel("Budget (questions)", fontsize=9)
         ax.grid(True, linestyle="--", alpha=0.5)
         ax.set_xticks(budgets)
-        ax.set_xticklabels(budget_labels, fontsize=9)
+        ax.set_xticklabels(budgets, fontsize=9)
         ax.set_ylim(-0.05, 1.05)
 
         for selector, style in styles.items():
@@ -216,7 +214,8 @@ def plot_detection_rate_vs_budget(
             )
 
     axes[0].set_ylabel("Detection rate (mean ± std)", fontsize=10)
-    axes[0].legend(loc="upper left", framealpha=0.9, fontsize=8.5)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=3, fontsize=8)
 
     plt.tight_layout()
     plt.savefig(out_pdf, bbox_inches="tight")

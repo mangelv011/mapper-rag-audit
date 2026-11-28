@@ -443,101 +443,78 @@ def format_latex_table(summary: Sequence[SummaryRow]) -> str:
 
     budgets = sorted({r.budget for r in summary})
 
-    lines = [
-        "\\begin{table}[htbp]",
-        "  \\centering",
-        "  \\small",
-        "  \\begin{tabular}{ll" + "r" * len(budgets) + "r}",
-        "    \\hline",
-        "    Trap type & Selector & "
-        + " & ".join(f"Budget {b}" for b in budgets)
-        + " & Pooled at max budget \\\\",
-        "    \\hline",
-    ]
-
-    current_trap = None
-    for (trap, sel), b_map in sorted(grouped.items()):
-        if current_trap is not None and current_trap != trap:
-            lines.append("    \\hline")
-        current_trap = trap
-
-        trap_label = trap_names.get(trap, trap)
-        sel_label = display_names.get(sel, sel)
-
-        budget_cells = []
-        for b in budgets:
-            if b in b_map:
-                row = b_map[b]
-                cell = (
-                    f"{row.detection_rate_mean * 100:.1f}$\\pm$"
-                    f"{row.detection_rate_std * 100:.1f}\\% "
-                    f"($n={row.ingestions_with_broken}/{row.ingestions}$)"
-                )
-            else:
-                cell = "--"
-            budget_cells.append(cell)
-
-        max_b = max(budgets) if budgets else 0
-        if max_b in b_map:
-            row = b_map[max_b]
-            pooled_cell = (
-                f"{row.total_detected}/{row.total_broken} "
-                f"({row.pooled_detection_rate * 100:.1f}\\%)"
-            )
-        else:
-            pooled_cell = "--"
-        lines.append(
-            f"    {trap_label} & {sel_label} & "
-            + " & ".join(budget_cells)
-            + f" & {pooled_cell} \\\\"
-        )
-
-    lines.extend(
-        [
-            "    \\hline",
-            "  \\end{tabular}",
-            "  \\caption{Detection rate (mean $\\pm$ sample SD over ingestions with regressions; $n$ gives those ingestions / total seeds). The final column is pooled at the largest budget.}",
-            "  \\label{tab:main-results}",
-            "\\end{table}",
-            "",
+    def table(columns: int, header: list[str], cells, caption: str, label: str) -> list[str]:
+        # The trap type is a group row, not a column, so the table fits the page width.
+        lines = [
             "\\begin{table}[htbp]",
             "  \\centering",
-            "  \\small",
-            "  \\begin{tabular}{llrrr}",
+            "  \\footnotesize",
+            "  \\setlength{\\tabcolsep}{4pt}",
+            "  \\begin{tabular}{l" + "r" * columns + "}",
             "    \\hline",
-            "    Trap type & Selector & "
-            + " & ".join(f"Budget {b}" for b in budgets)
-            + " \\\\",
-            "    \\hline",
+            *header,
         ]
-    )
-    current_trap = None
-    for (trap, sel), b_map in sorted(grouped.items()):
-        if current_trap is not None and current_trap != trap:
-            lines.append("    \\hline")
-        current_trap = trap
-        cells = []
-        for b in budgets:
-            row = b_map[b]
-            if row.tie_block_observations:
-                cells.append(
-                    f"{row.tie_block_size_mean:.1f}$\\pm${row.tie_block_size_std:.1f} "
-                    f"($n={row.tie_block_observations}$)"
-                )
-            else:
-                cells.append("--")
-        lines.append(
-            f"    {trap_names.get(trap, trap)} & {display_names.get(sel, sel)} & "
-            + " & ".join(cells)
-            + " \\\\"
-        )
-    lines.extend(
-        [
+        current_trap = None
+        for (trap, sel), b_map in sorted(grouped.items()):
+            rows = [b_map[b] for b in budgets]
+            if current_trap != trap:
+                current_trap = trap
+                lines += [
+                    "    \\hline",
+                    (
+                        f"    \\multicolumn{{{columns + 1}}}{{l}}{{{trap_names.get(trap, trap)}: "
+                        f"{rows[0].ingestions_with_broken} of {rows[0].ingestions} ingestions "
+                        "break a question} \\\\"
+                    ),
+                ]
+            row_cells = " & ".join(cells(rows))
+            lines.append(f"    {display_names.get(sel, sel)} & {row_cells} \\\\")
+        return lines + [
             "    \\hline",
             "  \\end{tabular}",
-            "  \\caption{Primary-score tie-block size at the cut (mean $\\pm$ SD; $n$ is the number of cuts). \\texttt{--} means the selector ranking ended at or before the budget. Ties are ordered by question ID.}",
-            "  \\label{tab:main-ties}",
+            f"  \\caption{{{caption}}}",
+            f"  \\label{{{label}}}",
             "\\end{table}",
         ]
+
+    def detection_cells(rows: list[SummaryRow]) -> list[str]:
+        means = [
+            f"{r.detection_rate_mean * 100:.1f}$\\pm${r.detection_rate_std * 100:.1f}" for r in rows
+        ]
+        return means + [f"{r.total_detected}/{r.total_broken}" for r in rows]
+
+    def tie_cells(rows: list[SummaryRow]) -> list[str]:
+        return [
+            f"{r.tie_block_size_mean:.1f}$\\pm${r.tie_block_size_std:.1f} "
+            f"({r.tie_block_observations})"
+            if r.tie_block_observations
+            else "--"
+            for r in rows
+        ]
+
+    n = len(budgets)
+    detection = table(
+        2 * n,
+        [
+            (
+                f"    & \\multicolumn{{{n}}}{{c}}{{Mean $\\pm$ SD (\\%)}} "
+                f"& \\multicolumn{{{n}}}{{c}}{{Pooled count}} \\\\"
+            ),
+            "    Selector & " + " & ".join(str(b) for b in budgets * 2) + " \\\\",
+        ],
+        detection_cells,
+        "Detection rate at each budget (number of questions re-tested). Mean and sample SD "
+        "are over the ingestions that break a question; the pooled count is broken questions "
+        "found out of all broken questions.",
+        "tab:main-results",
     )
-    return "\n".join(lines)
+    ties = table(
+        n,
+        ["    Selector & " + " & ".join(f"Budget {b}" for b in budgets) + " \\\\"],
+        tie_cells,
+        "Primary-score tie-block size at the cut (mean $\\pm$ SD, number of cuts in "
+        "parentheses). \\texttt{--} means the selector ranking ended at or before the budget. "
+        "Ties are ordered by question ID.",
+        "tab:main-ties",
+    )
+    return "\n".join([*detection, "", *ties])
