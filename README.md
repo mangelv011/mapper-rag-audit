@@ -279,6 +279,7 @@ Run every command from the repository root, inside the environment set up in [Ru
 | Result | Command | Output |
 |---|---|---|
 | Toy example on a circle (report figures) | `python experiments/toy_circle.py` | `report/figures/toy/` |
+| 100-seed robustness table, from the committed runs | `python experiments/robustness.py` | `report/figures/robustness_table.tex` |
 | Main table and figure, redrawn from the committed runs | `python experiments/main_experiment.py --plot-only` | `report/figures/main_experiment.pdf`, `report/figures/main_results_table.tex`, `results/main_experiment/` |
 
 **After `python experiments/prepare_data.py`:**
@@ -291,6 +292,15 @@ Run every command from the repository root, inside the environment set up in [Ru
 | Mapper graph of SciFact and its HTML view | `python experiments/build_mapper_graph.py` | `data/mapper/` |
 
 `--plot-only` gives the committed numbers exactly. A full run on another machine can differ from them by a few counts: one of ours repeated its own results run after run, yet found one broken question fewer for Mapper on the `mix` traps at budget 60. We have not identified the cause.
+
+The runs behind the robustness table are in `results/robustness/`. To produce them again (about 3 hours on one laptop), in bash:
+
+```bash
+python experiments/main_experiment.py --seeds $(seq 0 99) --results-dir data/seeds_100 --figures-dir data/seeds_100
+python experiments/robustness.py --runs data/seeds_100/runs.csv --from-data data
+```
+
+The second command overwrites `results/robustness/broken_questions.csv` and the report table; copy the new `runs.csv` to `results/robustness/` to keep the three consistent.
 
 The trap ingestions of one seed have their own commands in [SciFact trap ingestions](#scifact-trap-ingestions).
 

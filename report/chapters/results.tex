@@ -16,3 +16,30 @@ cut.
   \caption{Detection rate against budget for each trap type.}
   \label{fig:main-experiment}
 \end{figure}
+
+\subsection{Robustness over 100 seeds}
+\label{sec:robustness}
+
+The ten seeds above give few break events, so we repeated the main experiment
+with seeds 0 to 99, same corpus, selectors and budgets, on one machine. We
+fixed the decision rule before running: Mapper is worse than a baseline at a
+budget only if the 95\% bootstrap interval of the difference in pooled
+detection rate, resampling seeds, lies below zero.
+Table~\ref{tab:robustness} shows the counts and intervals. By this rule Mapper
+is worse than nearest neighbours and than k-means at the three budgets. It is
+above random at the three budgets.
+
+\input{figures/robustness_table}
+
+Only ten distinct questions ever break, and three of them account for most
+break events. The intervals therefore describe these questions and this trap
+generator; they do not cover the choice of other questions. The traps are
+synthetic and built next to the correct chunk of each target, which may favour
+nearest neighbours. The comparison without edges and neighbour expansion was
+added after seeing the data: it shows no difference at budget 15, an interval
+that reaches zero at budget 30, and a small gain from the graph structure at
+budget 60.
+
+A full run on another machine can differ by a few counts: restricted to seeds
+0 to 9, this run finds 11 of 14 broken questions with Mapper at budget 60,
+where Table~\ref{tab:main-results} reports 12 of 14.

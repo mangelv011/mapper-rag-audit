@@ -37,6 +37,14 @@ from mapper_rag_audit.graph_diff import (
 from mapper_rag_audit.mapper import MapperGraph
 from mapper_rag_audit.selection import Selector
 
+DISPLAY_NAMES = {
+    "random": "Random",
+    "kmeans": "k-means",
+    "nearest_neighbours": "Nearest neighbours",
+    "mapper": "Mapper (all rules)",
+    "mapper_no_edges": "Mapper (no edges or neighbours)",
+}
+
 
 @dataclass(frozen=True)
 class ExperimentRun:
@@ -335,6 +343,29 @@ def export_runs_csv(runs: Sequence[ExperimentRun], path: Path) -> None:
             writer.writerow(row)
 
 
+def load_runs_csv(path: Path) -> list[ExperimentRun]:
+    """Read runs saved by ``export_runs_csv``."""
+    with path.open("r", encoding="utf-8") as f:
+        return [
+            ExperimentRun(
+                selector=row["selector"],
+                trap_type=row["trap_type"],
+                seed=int(row["seed"]),
+                budget=int(row["budget"]),
+                candidates=int(row["candidates"]),
+                selected=int(row["selected"]),
+                broken=int(row["broken"]),
+                detected=int(row["detected"]),
+                detection_rate=float(row["detection_rate"] or "nan"),
+                targets=int(row["targets"]),
+                targets_hit=int(row["targets_hit"]),
+                target_rate=float(row["target_rate"]),
+                tie_block_size=int(row["tie_block_size"]),
+            )
+            for row in csv.DictReader(f)
+        ]
+
+
 def export_summary_csv(summary: Sequence[SummaryRow], path: Path) -> None:
     """Save summarized metrics to CSV."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -380,13 +411,6 @@ def export_summary_csv(summary: Sequence[SummaryRow], path: Path) -> None:
 
 def format_markdown_table(summary: Sequence[SummaryRow]) -> str:
     """Generate Markdown results table."""
-    display_names = {
-        "random": "Random",
-        "kmeans": "k-means",
-        "nearest_neighbours": "Nearest neighbours",
-        "mapper": "Mapper (all rules)",
-        "mapper_no_edges": "Mapper (no edges or neighbours)",
-    }
     lines = [
         "| Selector | Trap Type | Budget | Detection Rate (pooled [count]; mean ± std) | Pooled DR | Target Rate (mean ± std) | Cut Tie Block (mean ± std; n) |",
         "|---|---|---:|---:|---:|---:|---:|",
@@ -408,7 +432,7 @@ def format_markdown_table(summary: Sequence[SummaryRow]) -> str:
             else "— (no cut)"
         )
         lines.append(
-            f"| {display_names.get(row.selector, row.selector)} | `{row.trap_type}` | {row.budget} | {det_str} | {pool_str} | {tgt_str} | {tie_str} |"
+            f"| {DISPLAY_NAMES.get(row.selector, row.selector)} | `{row.trap_type}` | {row.budget} | {det_str} | {pool_str} | {tgt_str} | {tie_str} |"
         )
     lines.extend(
         [
@@ -423,13 +447,6 @@ def format_markdown_table(summary: Sequence[SummaryRow]) -> str:
 
 def format_latex_table(summary: Sequence[SummaryRow]) -> str:
     """Generate LaTeX booktabs table ready for insertion into report."""
-    display_names = {
-        "random": "Random",
-        "kmeans": "k-means",
-        "nearest_neighbours": "Nearest neighbours",
-        "mapper": "Mapper (all rules)",
-        "mapper_no_edges": "Mapper (no edges or neighbours)",
-    }
     trap_names = {
         "near_copy": "\\texttt{near\\_copy}",
         "contradiction": "\\texttt{contradiction}",
@@ -468,7 +485,7 @@ def format_latex_table(summary: Sequence[SummaryRow]) -> str:
                     ),
                 ]
             row_cells = " & ".join(cells(rows))
-            lines.append(f"    {display_names.get(sel, sel)} & {row_cells} \\\\")
+            lines.append(f"    {DISPLAY_NAMES.get(sel, sel)} & {row_cells} \\\\")
         return lines + [
             "    \\hline",
             "  \\end{tabular}",
